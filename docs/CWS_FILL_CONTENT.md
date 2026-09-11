@@ -37,14 +37,14 @@
 ### 摘要 (Summary) — 最多 132 字符
 
 ```
-开源免费的本地密码管理器：账号、密码与两步验证（TOTP/2FA）动态码以 AES-256-GCM 加密保存在你的浏览器里，不上传云端、无需注册；自动填充并一键登录，含密码强度检测、安全体检、密码生成器、显隐切换、多环境账号隔离、主流密码管理器迁移导入、中英双语
+开源免费的本地密码管理器：账号、密码与两步验证（TOTP 2FA）动态码以 AES-256-GCM 加密保存在你的浏览器里，不上传云端、无需注册；自动填充并一键登录，含密码强度检测、安全体检、密码生成器、显隐切换、多环境账号隔离、主流密码管理器迁移导入、中英双语
 ```
 
 > ⚠️ 摘要必须与 `public/_locales/zh_CN/messages.json` 的 `extensionDescription` 逐字一致（当前 **131 字符**，manifest 描述受 132 字符硬限制，超限会导致 zip 上传失败）。英文摘要同步 `public/_locales/en/messages.json`（**130 字符**），见下方英文语言标签页字段。**改摘要必须同时改这两处粘贴块与两个 `_locales` 文件**，否则商店列表与包内 manifest 不一致。
 >
 > 🔄 「零联网 / 100% offline」的说法已替换为可核对的「不上传云端」——扩展每 6 小时会发起一次不携带用户数据的匿名版本检查（商店安装可访问时探测 Chrome 应用商店，否则回退 GitHub Releases API），旧表述并不成立。两个 `_locales` 文件已随本次改动更新，仍需 `pnpm build` 后重新上传商店包，线上商店列表才会与本地文档一致。
 >
-> 🚫 **2026-09-09 驳回修正（现行口径）**：旧摘要把「本地加密密码管理器 / AES-256-GCM / 一键登录（填充+勾选+点击）/ TOTP 两步验证 / 安全体检 / Chrome·Bitwarden·1Password 导入 / 密码生成器 / 无需注册」八组关键词用逗号串成一句，其中竞品品牌名被审核直接点名。新摘要**信息密度不降、句式变了**：主语谓语齐全，功能项挂在「含……」这个谓语下面而不是裸挂在句号后，品类词「密码管理器」按产品口径出现、竞品名零出现。`AES-256-GCM` 按用户要求写回摘要（准确的算法名，此前正文里不完整的「AES-256」已一并更正），`PBKDF2` 迭代次数这类参数仍只出现在【安全架构】正文。✅ 两步验证按用户要求写成 **「两步验证（TOTP/2FA）」**：中文侧真实检索词是「两步验证」，两个英文缩写各有搜索量，一份括号全装下，摘要 131 字符仍在 132 上限内。
+> 🚫 **2026-09-09 驳回修正（现行口径）**：旧摘要把「本地加密密码管理器 / AES-256-GCM / 一键登录（填充+勾选+点击）/ TOTP 两步验证 / 安全体检 / Chrome·Bitwarden·1Password 导入 / 密码生成器 / 无需注册」八组关键词用逗号串成一句，其中竞品品牌名被审核直接点名。新摘要**信息密度不降、句式变了**：主语谓语齐全，功能项挂在「含……」这个谓语下面而不是裸挂在句号后，品类词「密码管理器」按产品口径出现、竞品名零出现。`AES-256-GCM` 按用户要求写回摘要（准确的算法名，此前正文里不完整的「AES-256」已一并更正），`PBKDF2` 迭代次数这类参数仍只出现在【安全架构】正文。✅ 两步验证按用户要求写成 **「两步验证（TOTP 2FA）」**：中文侧真实检索词是「两步验证」，两个英文缩写各有搜索量，一份括号全装下，摘要 131 字符仍在 132 上限内。
 > 🔻 **若因摘要再次被判堆砌，第一个要砍的就是结尾这串功能清单**：中文按「密码强度检测 → 安全体检 → 密码生成器 → 显隐切换 → 多环境账号隔离 → 迁移导入 → 中英双语」的逆序删，保留前 3～4 项即可回到 80 字符左右；说明正文里的对应条目不受影响，删摘要不丢覆盖。
 >
 > ✂️ **删减只针对违规本身，不针对篇幅（2026-09-10 二次修订）**：上一轮为过审把【为什么选择它】【适合谁】【安全架构】【常见问题】整体删掉，属于收缩过度——商店说明的上限是 16,000 字符，**篇幅本身不是违规项，同一句话在不同小节里抄两遍才是**。本轮按原结构全部恢复并逐条去重，每个卖点只在其归属小节展开一次：一键登录与多环境隔离归【为什么选择它】，会话有效期与自动锁定归【适合谁】，加密参数归【安全架构】，强度检测 / 显隐切换 / 导入兼容性归【功能全览】，联网 / 性能 / 权限等前文未覆盖的信息归【常见问题】。竞品品牌名仍然零出现，迁移能力统一写「主流密码管理器导出表格 / common password-manager exports」。
@@ -191,7 +191,7 @@ FEATURE SET
 · Password generator: random passwords or memorable word passphrases, with the length, character set or number of words you choose, and ambiguous characters (0/O, 1/l) can be left out.
 · Password strength check: four rules — length, letters, numbers, symbols — rate every password weak, medium or strong while you add, edit or save it.
 · Show or hide passwords: adds a visibility control inside password fields on the page (off by default; turn it on in preferences) so you can check what was filled.
-· Two-factor codes (TOTP): add a key by scanning the QR code on a page or uploading an image, and the code is generated on your device per RFC 6238 — custom algorithm (SHA1/256/512), digits (6–8) and period supported — with no network request and nothing uploaded; when the login asks for a code, the live one sits next to the field and fills in one click.
+· Two-factor codes (TOTP 2FA): add a key by scanning the QR code on a page or uploading an image, and the code is generated on your device per RFC 6238 — custom algorithm (SHA1/256/512), digits (6–8) and period supported — with no network request and nothing uploaded; when the login asks for a code, the live one sits next to the field and fills in one click.
 · Import and export: CSV and JSON, either the whole vault or just the entries you tick; the columns of common password-manager exports are detected automatically, two-factor keys included; plus encrypted .aph backups and email backup reminders.
 · Trash and history: deleted entries stay recoverable for 30 days, and each password keeps earlier snapshots you can roll back to.
 · Quick add and read-only details: the "+" in the panel header saves an account for the current site with its domain pre-filled, and a live Caps Lock hint sits under every master-password field; "View details" opens a drawer with the full note, the live code and the change history without entering edit mode.
