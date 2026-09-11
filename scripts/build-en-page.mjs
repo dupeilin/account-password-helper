@@ -23,6 +23,7 @@ import { buildFaqPageJsonLd, parseFaqEntries, selectFaqEntries } from './lib/faq
 const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const srcPath = path.join(root, 'index.html');
 const outPath = path.join(root, 'en.html');
+// codeql[js/incomplete-hostname-regexp] -- SITE 仅作为字面量拼接进生成的 og:url / canonical 属性值，从不作为正则去匹配主机名，此处无需转义点号或尾部锚定
 const SITE = 'https://liaolongdong.github.io/account-password-helper';
 
 const EN_KEYWORDS =

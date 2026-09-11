@@ -13,6 +13,7 @@ import { applyI18n, assertI18nCoverage } from './lib/apply-i18n.mjs';
 const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const srcPath = path.join(root, 'pricing.html');
 const outPath = path.join(root, 'pricing.en.html');
+// codeql[js/incomplete-hostname-regexp] -- SITE 仅作为字面量拼接进生成的 canonical 属性值，从不作为正则去匹配主机名，此处无需转义点号或尾部锚定
 const SITE = 'https://liaolongdong.github.io/account-password-helper';
 
 let html = readFileSync(srcPath, 'utf8');
