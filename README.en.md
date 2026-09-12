@@ -11,6 +11,7 @@
 [![Manifest V3](https://img.shields.io/badge/Chrome-MV3-4285F4?style=for-the-badge&logo=googlechrome&logoColor=white)](https://developer.chrome.com/docs/extensions/mv3/intro/)
 [![License](https://img.shields.io/badge/License-GPL--3.0-blue?style=for-the-badge)](#license)
 [![Last Commit](https://img.shields.io/github/last-commit/liaolongdong/account-password-helper?style=for-the-badge&label=Last%20Commit&logo=github&logoColor=white)](https://github.com/liaolongdong/account-password-helper/commits/main)
+[![CI](https://img.shields.io/github/actions/workflow/status/liaolongdong/account-password-helper/ci.yml?style=for-the-badge&label=CI&logo=github&logoColor=white)](https://github.com/liaolongdong/account-password-helper/actions/workflows/ci.yml)
 
 > **Free open-source local-first password manager** · One-click login (fill → tick → click) · Local AES-256-GCM, zero cloud · TOTP 2FA · Security audit · Multi-environment isolation · One-click migration from Chrome / Bitwarden / 1Password · Built for developers & QA
 
@@ -18,9 +19,9 @@ A **free, open-source** local Chrome password manager: **one-click login** that 
 
 > **Security notice**: All data stays in your browser; sensitive fields are encrypted individually with AES-256-GCM and password data never travels over the network. The extension's only outbound behaviour is an anonymous version check every 6 hours (it reads Chrome Web Store reachability and the GitHub Releases version number, carrying no account data) — see [Permissions & Data Flow](#-permissions--data-flow). For the safety of your assets, we recommend not storing highly sensitive credentials (banking, payment, etc.) in any browser extension.
 >
-> 🌐 **Live demo**: https://liaolongdong.github.io/account-password-helper/en.html ｜ 📊 **Technical highlights**: PBKDF2 600K iterations · AES-256-GCM authenticated encryption · Instant side panel in every state (20–50ms to data on the cached warm path) · 6 themes · Bilingual UI · Core features work fully offline · 632 automated tests
+> 🌐 **Live demo**: https://liaolongdong.github.io/account-password-helper/en.html ｜ 📊 **Technical highlights**: PBKDF2 600K iterations · AES-256-GCM authenticated encryption · Instant side panel in every state (20–50ms to data on the cached warm path) · 6 themes · Bilingual UI · Core features work fully offline · 640 automated tests
 
-**Contents**: [Core Advantages](#-core-advantages) · [Feature Tour](#-feature-tour) · [How It Compares](#how-it-compares) · [Core Features](#core-features) · [Permissions & Data Flow](#-permissions--data-flow) · [Quick Start](#quick-start) · [FAQ](#faq) · [License](#license)
+**Contents**: [Core Advantages](#-core-advantages) · [Feature Tour](#-feature-tour) · [How It Compares](#how-it-compares) · [Core Features](#core-features) · [Permissions & Data Flow](#-permissions--data-flow) · [Quick Start](#quick-start) · [FAQ](#faq) · [Contributing](#contributing) · [License](#license)
 
 <p align="center">
   <img src="./assets/icons/icon.svg" alt="Account Password Helper extension icon" width="120" />
@@ -48,37 +49,37 @@ A **free, open-source** local Chrome password manager: **one-click login** that 
 <table>
   <tr>
     <td width="50%" align="center">
-      <img src="./assets/screenshots/09-totp-code.png" alt="Two-factor field in the edit dialog: TOTP secret, live code and a 30-second countdown" width="100%" /><br />
-      <sub><b>Built-in TOTP</b> — secret and 30-second live code side by side; add via QR scan or image upload</sub>
+      <img src="./assets/cws-store/screen-1-one-click-login-en.png" alt="One-click login: the side panel fills the account and password, ticks remember me and clicks the sign-in button" width="100%" /><br />
+      <sub><b>One-click login</b> — fill, tick and submit in one step; Ctrl+Shift+F fills and ticks by default, and only submits once you enable "Auto-submit login"</sub>
     </td>
     <td width="50%" align="center">
-      <img src="./assets/screenshots/10-health-check.png" alt="Security audit panel: 71 overall score plus four checks — reused, weak, commonly leaked and stale passwords" width="100%" /><br />
-      <sub><b>Offline security audit</b> — 0–100 score across four weighted dimensions; missing 2FA listed separately</sub>
-    </td>
-  </tr>
-  <tr>
-    <td width="50%" align="center">
-      <img src="./assets/screenshots/02-password-list.png" alt="Password list: site icons, tags, pinned favorites, timestamps and batch actions" width="100%" /><br />
-      <sub><b>List &amp; management</b> — tags, pinned favorites, pinyin search, one-click dedupe</sub>
-    </td>
-    <td width="50%" align="center">
-      <img src="./assets/screenshots/11-inline-fill.png" alt="Inline fill mini panel on a login page: search box and accounts matching the current site" width="100%" /><br />
-      <sub><b>Inline fill</b> — the key icon inside a login field opens a keyboard-friendly mini panel</sub>
+      <img src="./assets/cws-store/screen-2-totp-en.png" alt="Two-factor codes: a live 6-digit code with a countdown ring shown right in the password list" width="100%" /><br />
+      <sub><b>Built-in TOTP</b> — codes live next to the password, refresh in place on a 30-second clock, with configurable algorithm and 6 / 7 / 8 digits</sub>
     </td>
   </tr>
   <tr>
     <td width="50%" align="center">
-      <img src="./assets/screenshots/06-sidepanel-fill.png" alt="Auto-save confirmation card with account, password, tag, remark and save or not-now actions" width="100%" /><br />
-      <sub><b>Auto-save credentials</b> — a save card after login with editable tags and remarks, plus smart dedup</sub>
+      <img src="./assets/cws-store/screen-3-multi-env-en.png" alt="Per-environment accounts: dev, staging and production entries for one site separated by tags" width="100%" /><br />
+      <sub><b>Per-environment isolation</b> — several accounts for the same site, tagged Dev / Staging / Prod, filled by exact host match</sub>
     </td>
     <td width="50%" align="center">
-      <img src="./assets/screenshots/12-theme-skin.png" alt="Preferences panel with six theme swatches and the Chinese/English language switch" width="100%" /><br />
-      <sub><b>Themes &amp; bilingual UI</b> — 6 color themes and instant 中文 / English switching</sub>
+      <img src="./assets/cws-store/screen-4-security-audit-en.png" alt="Offline security audit: a 0 to 100 score with the four problem categories broken out" width="100%" /><br />
+      <sub><b>Offline security audit</b> — a 0–100 score weighted across reuse, weak, leaked-dictionary and stale passwords, computed entirely on your machine</sub>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" align="center">
+      <img src="./assets/cws-store/screen-5-preferences-en.png" alt="Preferences panel with six theme swatches and the Chinese/English language switch" width="100%" /><br />
+      <sub><b>Themes &amp; bilingual UI</b> — 6 color themes and instant 中文 / English switching, with idle lock and session validity configured separately</sub>
+    </td>
+    <td width="50%" align="center">
+      <img src="./assets/cws-store/screen-6-local-encryption-en.png" alt="Local encryption: the first-run master password screen, with data encrypted before it is written to browser storage" width="100%" /><br />
+      <sub><b>Local encryption</b> — a PBKDF2-SHA256 key stretched 600,000 times, then five sensitive fields sealed individually with AES-256-GCM in local storage</sub>
     </td>
   </tr>
 </table>
 
-> 📸 The full one-click login sequence (fill → tick → click) is in the demo animation above; more screens (floating button, session validity, CSV import/export) are on the [live demo page](https://liaolongdong.github.io/account-password-helper/en.html).
+> 📸 The shots above come from the store asset set and use placeholder demo data. The full one-click login sequence is in the demo animation above; more screens (inline fill panel, floating button, CSV import/export) are on the [live demo page](https://liaolongdong.github.io/account-password-helper/en.html).
 
 ## How It Compares
 
@@ -101,7 +102,7 @@ A **free, open-source** local Chrome password manager: **one-click login** that 
 
 - **Native browser encryption**: The master password derives a key through PBKDF2-SHA256 (600,000 iterations); username / password / URL / remark / TOTP secret are encrypted one field at a time with AES-256-GCM (a fresh random IV per encryption), while non-sensitive metadata such as tags and timestamps stays plaintext so the list can render. Password data never travels over the network
 - **Flexible session control**: Validity from 1 hour to 7 days (default 24 hours); auto idle lock and lock-on-browser-restart are both opt-in and off by default; one-click lock in the popup. Remaining time is visible in the manager/sidebar/popup (amber near expiry, red at the end) and clicking the badge opens the validity dialog where you can renew
-- **Offline security audit**: One-click 0–100 score across four weighted dimensions (reused 35 / weak 25 / hit in the leaked dictionary 20 / stale 20); accounts without 2FA are listed separately and do not affect the score. The leaked-password dictionary is a built-in top-1,000 offline list — everything computed locally with no network request
+- **Offline security audit**: One-click 0–100 score across four weighted dimensions (reused 35 / weak 25 / hit in the leaked dictionary 20 / stale 20); accounts without 2FA are listed separately and do not affect the score. The leaked-password dictionary is a built-in offline list of nearly a thousand entries — everything computed locally with no network request
 - **TOTP 2FA**: Local code generation (RFC 6238) with live codes and countdowns in the list/sidebar; add secrets by scanning a webpage QR code or uploading an image; GitHub-style two-step login auto-anchors a live-code capsule for one-click fill
 
 ### ⚡ Smart Fill
@@ -239,6 +240,19 @@ If this project helps you, please give it a ⭐️ and leave a review on the Chr
 - A forgotten master password **cannot be recovered** — keep it safe;
 - Sensitive fields are stored locally, encrypted field by field with AES-256-GCM; password data never leaves the machine as plaintext (the single outbound request is the anonymous version check — see [Permissions & Data Flow](#-permissions--data-flow));
 - Back up regularly via encrypted backup (.aph files), and enable clipboard auto-clear and auto idle lock; for higher security, enable "Lock on browser restart".
+
+## Contributing
+
+Issues and pull requests are welcome. This is a local-first project, and two constraints are hard: **credential data never leaves the machine** and **minimal permissions**. Proposals that cross either line should be discussed in an issue first.
+
+- **Open an issue**: [pick a template](https://github.com/liaolongdong/account-password-helper/issues/new/choose) (bug report and feature request, both with reproduction steps and blast radius)
+- **Report a vulnerability**: use the private channel in [.github/SECURITY.md](./.github/SECURITY.md) rather than a public issue
+- **Before attaching a screenshot or log**: replace real accounts, emails, passwords and live TOTP codes with placeholders such as `example.com` / `dummy` — published content cannot reliably be withdrawn
+- **Setup and commands**: [docs/CONTRIBUTING.md](./docs/CONTRIBUTING.md) | **Code of conduct**: [.github/CODE_OF_CONDUCT.md](./.github/CODE_OF_CONDUCT.md)
+- **Quality gates**: every pull request and every commit to `main` runs [ci.yml](./.github/workflows/ci.yml) — `typecheck`, `lint`, `lint:style`, `test:run`, and `build` for both Chrome and Firefox
+- **For AI search engines**: a machine-readable project summary lives at [llms.txt](https://liaolongdong.github.io/account-password-helper/llms.txt), alongside the site's `robots.txt` and `sitemap.xml`
+
+The full change log is in [CHANGELOG.md](./CHANGELOG.md).
 
 ## License
 

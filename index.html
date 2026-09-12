@@ -27,6 +27,11 @@
       name="msvalidate.01"
       content="94B7E897F981C21EDC50BB47E07B9874"
     />
+    <!-- 允许搜索引擎在结果页使用大图预览（显式声明 index, follow，与 compare.html 口径一致） -->
+    <meta
+      name="robots"
+      content="index, follow, max-image-preview:large"
+    />
     <!-- Open Graph / 社交分享卡片：微信/QQ/Telegram/X 等平台分享演示页链接时展示预览卡片 -->
     <meta
       property="og:type"
@@ -113,8 +118,8 @@
         "applicationSubCategory": "Password Manager",
         "operatingSystem": "Chrome",
         "browserRequirements": "需要 Chrome 114 或更高版本以使用 Side Panel API（未声明 minimum_chrome_version，旧版本仅侧边栏功能不可用）；兼容 Edge、Brave 等 Chromium 内核浏览器",
-        "softwareVersion": "3.7.0",
-        "dateModified": "2026-09-11",
+        "softwareVersion": "3.9.0",
+        "dateModified": "2026-09-12",
         "isAccessibleForFree": true,
         "offers": {
           "@type": "Offer",
@@ -140,16 +145,52 @@
         "downloadUrl": "https://github.com/liaolongdong/account-password-helper/releases/latest",
         "image": "https://liaolongdong.github.io/account-password-helper/assets/cws-store/marquee-1400x560.png",
         "screenshot": [
-          "https://liaolongdong.github.io/account-password-helper/assets/screenshots/02-password-list.png",
-          "https://liaolongdong.github.io/account-password-helper/assets/screenshots/06-sidepanel-fill.png",
-          "https://liaolongdong.github.io/account-password-helper/assets/screenshots/09-totp-code.png",
-          "https://liaolongdong.github.io/account-password-helper/assets/screenshots/10-health-check.png"
+          "https://liaolongdong.github.io/account-password-helper/assets/cws-store/screen-1-one-click-login.png",
+          "https://liaolongdong.github.io/account-password-helper/assets/cws-store/screen-2-totp.png",
+          "https://liaolongdong.github.io/account-password-helper/assets/cws-store/screen-3-multi-env.png",
+          "https://liaolongdong.github.io/account-password-helper/assets/cws-store/screen-4-security-audit.png",
+          "https://liaolongdong.github.io/account-password-helper/assets/cws-store/screen-5-preferences.png",
+          "https://liaolongdong.github.io/account-password-helper/assets/cws-store/screen-6-local-encryption.png"
         ],
         "license": "https://github.com/liaolongdong/account-password-helper/blob/main/LICENSE",
         "author": {
           "@type": "Person",
-          "name": "liaolongdong"
-        }
+          "@id": "https://liaolongdong.github.io/account-password-helper/#author",
+          "name": "liaolongdong",
+          "url": "https://github.com/liaolongdong",
+          "sameAs": ["https://github.com/liaolongdong"]
+        },
+        "publisher": { "@id": "https://liaolongdong.github.io/account-password-helper/#org" }
+      }
+    </script>
+    <!-- 站点实体：Organization / WebSite 用 @id 与上方 SoftwareApplication 的 publisher、author 互相引用，
+         让搜索引擎与 AI 引擎把「扩展 + 官网 + 维护者」识别为同一个实体。文案保持语言中立，en.html 无需额外替换规则。 -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "Organization",
+            "@id": "https://liaolongdong.github.io/account-password-helper/#org",
+            "name": "Account Password Helper",
+            "alternateName": "账号密码管理助手",
+            "url": "https://liaolongdong.github.io/account-password-helper/",
+            "logo": "https://liaolongdong.github.io/account-password-helper/assets/cws-store/store-icon-128x128.png",
+            "email": "924902324@qq.com",
+            "sameAs": [
+              "https://github.com/liaolongdong/account-password-helper",
+              "https://chromewebstore.google.com/detail/account-password-helper/fgimkdodpjfkddmildjieojpfakpanli"
+            ]
+          },
+          {
+            "@type": "WebSite",
+            "@id": "https://liaolongdong.github.io/account-password-helper/#website",
+            "url": "https://liaolongdong.github.io/account-password-helper/",
+            "name": "Account Password Helper · 账号密码管理助手",
+            "inLanguage": ["zh-CN", "en"],
+            "publisher": { "@id": "https://liaolongdong.github.io/account-password-helper/#org" }
+          }
+        ]
       }
     </script>
     <!-- FAQPage 结构化数据：由 scripts/lib/faq-schema.mjs 从页面可见 FAQS 生成，勿手工改文案 -->
@@ -2587,7 +2628,7 @@
                 <span data-i18n="footer.repo">GitHub 仓库</span>
               </a>
             </span>
-            <span data-i18n="footer.updated">最后更新：2026-09 · v3.7.0</span>
+            <span data-i18n="footer.updated">最后更新：2026-09 · v3.9.0</span>
           </div>
         </div>
         <div class="footer-wechat">
@@ -2919,7 +2960,7 @@
           en: 'Email: <a href="mailto:924902324@qq.com?subject=Account Password Helper Feedback">924902324@qq.com</a>',
         },
         'footer.repo': { zh: 'GitHub 仓库', en: 'GitHub Repo' },
-        'footer.updated': { zh: '最后更新：2026-09 · v3.7.0', en: 'Updated: Sep 2026 · v3.7.0' },
+        'footer.updated': { zh: '最后更新：2026-09 · v3.9.0', en: 'Updated: Sep 2026 · v3.9.0' },
         'wechat.title': { zh: '微信交流群', en: 'WeChat Group' },
         'wechat.desc': {
           zh: '扫码添加作者微信，备注「aph」邀你加入插件交流群',

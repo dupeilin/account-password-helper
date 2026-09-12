@@ -11,7 +11,7 @@
 在 Dashboard 打开**已有商品** → 「商品包 / Package」→ **上传新的 ZIP 生成新草稿**（被拒的旧草稿已关闭，无法在原草稿上编辑）。上传以下文件：
 
 ```
-.output/account-password-helper-3.8.0-chrome.zip
+.output/account-password-helper-3.9.0-chrome.zip
 ```
 
 > 💡 zip 文件名中的版本号跟随 `package.json`（release-please 自动维护），上传时以 `.output/` 目录中最新构建产物为准。
@@ -20,9 +20,9 @@
 >
 > 🚫 修正口径：**名称、摘要、说明、权限合理性说明、宣传图与 Featured 提名文案一律不得出现竞品品牌名**（Chrome / LastPass / Bitwarden / 1Password），一律改用「常见密码管理器的导出格式」这类描述性说法。下方第二步、第七步已据此改写，并在 `docs/CWS_PUBLISHING_GUIDE.md` 的提交前扫描中加入品牌名与重复度检查。
 >
-> 🔢 3.8.0 从未发布过（线上仍是 3.7.0），版本号可继续用 3.8.0 重新上传；若 Dashboard 拒绝同版本号，再到 `main` 上让 release-please 升到 3.8.1 后重新构建。
+> 🔢 3.8.0 从未上架（线上仍是 3.7.0），但 `main` 已经 release-please 连续打过 v3.8.0、v3.9.0 两个标签，当前 `main` 的 `package.json` 是 **3.9.0**。要上传的包必须比线上版本号更高：把发布分支同步到 `main` 后 `pnpm build`，产物即 `account-password-helper-3.9.0-chrome.zip`。
 >
-> ⚠️ 实测坑（2026-09-10）：本地工作区 `package.json` 仍是 **3.7.0**，`pnpm build` 出来的是 `account-password-helper-3.7.0-chrome.zip`——**与商店线上已发布的版本号相同，Dashboard 会直接拒绝上传**。必须先把分支同步到 `main`（`package.json` 跟随到 3.8.0）再 `pnpm build`，用新产物上传。
+> ⚠️ 实测坑（2026-09-10 记录，2026-09-12 复核仍成立）：本地工作区 `package.json` 停在 **3.7.0**，`pnpm build` 出来的是 `account-password-helper-3.7.0-chrome.zip`——**与商店线上已发布的版本号相同，Dashboard 会直接拒绝上传**。必须先把分支同步到 `main`（`package.json` 跟随到 3.9.0）再 `pnpm build`，用新产物上传。若 Dashboard 后续拒绝与已上传草稿同版本号，再到 `main` 上让 release-please 升一个 patch 版本后重新构建。
 
 ---
 
@@ -31,8 +31,18 @@
 ### 名称 (Name) — 最多 45 字符
 
 ```
-账号密码管理助手 - 本地加密密码管理器
+账号密码管理助手 - 本地加密密码管理器与自动填充
 ```
+
+> 📏 当前 **25 / 45 字符**。名称是商店搜索权重最高的字段，2026-09-12 之前的值只用了 20 字符，白丢 25 个字符额度。
+>
+> ➕ **2026-09-12 变更口径**：只在已多次过审的完整后缀「本地加密密码管理器」**后面追加一个高意图品类词「自动填充」**，不重排、不改写既有子串，商店对该短语已积累的精确匹配权重因此不受影响，新增词是唯一变量。仍是「品牌 - 描述」结构，**没有用逗号或顿号串关键词**（那才是摘要被判堆砌的形态）。英文 Name 保持 42 / 45 不变。
+>
+> ⚠️ 商店 Name 必须与 `public/_locales/zh_CN/messages.json` 的 `extensionName` 逐字一致——改一处必改另一处并 `pnpm build`，否则列表与包内 manifest 不符。
+>
+> 🔗 连带影响：`entrypoints/background/contextMenuManager.ts` 显式注册自己的右键菜单父项，正是因为扩展全名带副标题时直接用作父级会把二级菜单顶出屏幕（见 `docs/ARCHITECTURE.md`）。名称再长也不会退回那个坑——父项标题始终由我们自己控制。
+>
+> 🔻 **若名称本身被判堆砌**：回退本次追加的「与自动填充」（含连接词），恢复 `账号密码管理助手 - 本地加密密码管理器`——该值自 v3.6.0 起多次过审。
 
 ### 摘要 (Summary) — 最多 132 字符
 
@@ -51,7 +61,9 @@
 >
 > 📌 **评审回填三条（2026-09-10 四次修订）**：① 【功能全览】的「导入与导出」补 **「也可勾选条目批量导出选中项」**（代码依据 `composables/usePasswordManagement.ts` 的 `batchExportSelected()`：按 `selectedIds` 过滤后走同一条导出路径——主密码校验 + 带日期后缀的 CSV 文件名）；② **「两步验证（TOTP）」回到【功能全览】独立成条**（扫码 / 上传图片添加密钥、RFC 6238 本地计算、不联网、活码就位可一键填入——依据 `utils/totp.ts`、`utils/qrScanner.ts`、`entrypoints/content/inlineDropdown/TotpHandoffCapsule.ts`），【为什么选择它】的对应条目同步瘦身为纯价值句（不必摸手机、不必切验证器、密码与动态码同条目），机制与价值分属两节、句子不重复；③ 【常见问题】回填 **「真的完全免费吗？」**（只讲付费相关事实：没有高级版、没有内购、没有升级弹窗，GPL-3.0 / 源码可审计仍只归【为什么选择它】）与 **「能从其他密码管理器导入吗？」**（只讲操作路径：原应用导出 CSV / JSON → 导入页上传，字段自动识别归【功能全览】、「整库一次导入」归【适合谁】）。说明长度随之变为中文 **2380** / 英文 **6961** 字符，仍在 16,000 上限内。
 
-> 📌 **五次修订（2026-09-11，SEO/ASO 复核）**：① 逐条核对候选文案后**驳回三处与实现不符或不适用的表述**——「Ctrl+Shift+F 自动点击登录」（`entrypoints/content/quickFillHandler.ts` 的 `quick_fill` 硬编码 `autoLogin: false`，快捷键只做填充与勾选，点击登录由侧边栏「填充并登录」或偏好设置「自动触发登录」触发）、「EFF 助记词组」（内置词库为 `utils/data/passphrase-words.json` 的 3,080 词，`docs/THIRD-PARTY-NOTICES.md` 记录上游来源未记录，**并非 EFF 词表**）、「五维检测」（自检脚本禁词；实现是 4 个计分维度 +「未开启两步验证」只列示不计分）；【适合谁】的「一次按键完成登录」同步改为不指定触发方式的「一键完成登录」。② **回填六处代码里确有、商店说明漏写的事实**——【安全架构】补「密文只写入 local / session、从不使用会随浏览器账号同步的 sync 存储」与「更改主密码时原子重加密，不留半加密数据」（依据 `README.md` 的 storage 权限说明与「re-keys atomically without data loss」）；【功能全览】补「密码生成器可排除易混淆字符」「TOTP 支持自定义算法（SHA1/256/512）与位数（6~8）」「主密码输入框实时提示大写锁定」（依据 `utils/passphraseGenerator.ts`、`docs/ARCHITECTURE.md` 的 TOTP 章节、`composables/useCapsLockDetection.ts`）；【常见问题】补「换电脑或重装浏览器后数据还在吗」（只讲 .aph 备份还原路径，与【安全架构】的存储 API 口径不重复）。③ 检索词层面把「多环境账号隔离」「保存密码」写回正文（原为口语化表述）。竞品品牌名、绝对化表述、跨小节重复三项按自检脚本仍为零。说明长度变为中文 **2634** / 英文 **7743** 字符。
+> 📌 **五次修订（2026-09-11，SEO/ASO 复核）**：① 逐条核对候选文案后**驳回三处与实现不符或不适用的表述**——「Ctrl+Shift+F 自动点击登录」（`entrypoints/background/quickFillHandler.ts` 的 `quick_fill` 硬编码 `autoLogin: false`，快捷键只做填充与勾选，点击登录由侧边栏「填充并登录」或偏好设置「自动触发登录」触发）、「EFF 助记词组」（内置词库为 `utils/data/passphrase-words.json` 的 3,080 词，`docs/THIRD-PARTY-NOTICES.md` 记录上游来源未记录，**并非 EFF 词表**）、「五维检测」（自检脚本禁词；实现是 4 个计分维度 +「未开启两步验证」只列示不计分）；【适合谁】的「一次按键完成登录」同步改为不指定触发方式的「一键完成登录」。② **回填六处代码里确有、商店说明漏写的事实**——【安全架构】补「密文只写入 local / session、从不使用会随浏览器账号同步的 sync 存储」与「更改主密码时原子重加密，不留半加密数据」（依据 `README.md` 的 storage 权限说明与「re-keys atomically without data loss」）；【功能全览】补「密码生成器可排除易混淆字符」「TOTP 支持自定义算法（SHA1/256/512）与位数（6~8）」「主密码输入框实时提示大写锁定」（依据 `utils/passphraseGenerator.ts`、`docs/ARCHITECTURE.md` 的 TOTP 章节、`composables/useCapsLockDetection.ts`）；【常见问题】补「换电脑或重装浏览器后数据还在吗」（只讲 .aph 备份还原路径，与【安全架构】的存储 API 口径不重复）。③ 检索词层面把「多环境账号隔离」「保存密码」写回正文（原为口语化表述）。竞品品牌名、绝对化表述、跨小节重复三项按自检脚本仍为零。说明长度变为中文 **2634** / 英文 **7743** 字符。
+
+> 📌 **六次修订（2026-09-12，曝光与口径复核）**：① **中文 Name 补满额度**：追加「与自动填充」，20 → 25 字符（上限 45），英文 Name 不动；回退方法见「名称」小节。② **修掉最后一处快捷键过度声称**：【为什么选择它】首条原写「快捷键 `Ctrl+Shift+F` 有意只做填充与勾选」，暗示永不提交——`entrypoints/content/FormDetector.ts` 的判断是 `data.autoLogin || floatingButtonConfig.autoTriggerLogin`，也就是**开着「自动触发登录」时 `Ctrl+Shift+F` 确实会连登录一起点**，故改为「默认只做填充与勾选，只有开启该偏好后它才代为提交」的条件式表述（说明开头那句「并按你的设置自动点击登录按钮」本已是条件式，未改）；【第七步】Featured 提名中英文同条一并订正，演示 GIF 的分镜同步改掉「再手动点击」。③ **三处无法自证的绝对表述改为可核对写法**：泄露字典不写整数「1000」而写「近千条」（`utils/data/top1000.json` 实测 989 条去重明文）；侧边栏速度不再承诺「都保持 1 秒内打开」，改写为「按 1 秒内出界面来优化」并保留缓存快路径 20-50ms 限定词（该限定词是口径表硬性要求，英文侧用 en-dash）；浏览器版本一问用 **Chromium 114** 指代 Side Panel API 门槛，避开品牌名禁词表里的 `Chrome`。④ **回填九处代码里确有、说明漏写的事实**，全部只归一个 owning 小节：【功能全览】新增「页面悬浮填充按钮」（可拖拽 + 边缘吸附 + 透明度 10%~~100%，依据 `entrypoints/content/floatingButtons/DragHandler.ts` 的 `snapToEdge()` 与 `settingsPanelView.ts`）、「键盘完成全流程」（↑/↓ + Enter + Ctrl+C 复制账号 + Esc，依据 `entrypoints/sidepanel/App.vue` 的 `handleKeydown`；注意 **没有** Ctrl+Shift+C 复制密码，那行代码是注释掉的占位）、「工具栏 Popup 操作中枢」（剩余时间常驻 + 临期变色，依据 `entrypoints/popup/App.vue` 与 `composables/useSessionCountdown.ts`）；【功能全览】既有条目补数值——右键「生成并填充强密码」不读凭证因此锁定时可用（`contextMenuManager.ts` 的 `action !== 'generate'` 门控豁免）、历史快照默认 3 份可调 1~~10（`utils/storage/passwordHistory.ts`）、标签每条最多 3 个（`usePasswordManagement.ts` 的 `MAX_TAG_COUNT` / `MAX_TAG_LENGTH`）、收藏上限默认 10 可调 1~~50 且按 LRU 让位（`autoSaveManager.ts` 的 `evictLRUFavoriteIfNeeded`）、TOTP 位数改为离散值 6 / 7 / 8（`utils/totp.ts:110` 只认这三个值，旧的「6~~8」暗示区间连续，不准确）；【安全架构】补剪贴板清理可选 10 / 15 / 60 / 120 秒（`ClipboardSettingDialog.vue`），【适合谁】的会话口径改为「9 档可选」并只保留**两个**独立开关（`idleLockMinutes`、`relockOnBrowserRestart`；系统锁屏跟随闲置检测同一条路径触发，不是第三个开关，初稿写「逐项开合」已更正）。⑤ 【常见问题】补两条排障问答：浏览器版本要求、以及「填充没生效请先刷新标签页」（`quickFillHandler.ts` 的 `PING` 探活与 `bg.quickFill.pageNotReady`，跨域 frame 不下发凭证）。自检结果：`paste blocks: 6 | banned hits: none`、中英说明 `duplicate lines: none`、四个 `_locales` 值与粘贴块逐字一致；说明长度变为中文 **3293** / 英文 **9504** 字符（上限 16,000）。
 
 ### 说明 (Description) — 最多 16,000 字符
 
@@ -60,7 +72,7 @@
 账号密码管理助手是一款本地优先的密码管理器：账号、密码和两步验证码加密保存在你自己的浏览器里，不需要注册账号，也没有云端同步。打开登录页时，它可以自动填充账号和密码、勾选「记住我」，并按你的设置自动点击登录按钮。
 
 【为什么选择它】
-◆ 不只填表，还替你完成登录：在侧边栏选中条目点「填充并登录」，或在偏好设置中开启「自动触发登录」后自动提交；快捷键 Ctrl+Shift+F 有意只做填充与勾选、不提交表单，避免误发
+◆ 不只填表，还替你完成登录：在侧边栏选中条目点「填充并登录」即可一步走完填充、勾选与提交；快捷键 Ctrl+Shift+F 默认只做填充与勾选，只有你在偏好设置中开启「自动触发登录」后它才代为提交表单，不会背着你按下登录
 ◆ 多环境账号隔离：条目按精确域名匹配，开发、测试、预发、生产各留各的凭证——同时跑多环境的人最需要这条
 ◆ 验证码和密码存在同一处：不用在登录途中去摸手机、切换验证器应用——一个条目里既有密码也有动态码
 ◆ 免费、开源、无订阅：GPL-3.0 协议，源码可审计，全部功能不设付费墙
@@ -68,7 +80,7 @@
 【适合谁】
 · 开发者：本地、测试、预发、生产域名分开管理，凭据按站点精确命中，不用再靠备注区分环境
 · 测试工程师：批量导入用例账号，跨环境切换时一键完成登录，误删可回收，改错的密码能回滚
-· 隐私敏感用户：会话有效期从 1 小时到 7 天可自定义，支持闲置超时、系统锁屏与浏览器重启自动锁定
+· 隐私敏感用户：会话有效期 1 小时到 7 天共 9 档可选，闲置锁定阈值与「浏览器重启后锁定」各自独立开关
 · 日常登录用户：登录时自动保存新账号，需要时一键生成强密码，长期未更新的密码会有到期提醒
 · 正在搬家的人：从其他密码管理器换过来时整库一次导入，不用逐条手动录入
 
@@ -84,21 +96,24 @@
 · 密文只写入浏览器本地存储（持久化的 local 与仅内存的 session），不使用会随浏览器账号同步的 sync 存储，数据不会因为你登录了浏览器账号而离开这台设备
 · 更改主密码时对全部条目原子重加密：要么整体完成，要么保持原状，不会留下半加密的数据
 · 闲置超时、系统锁屏或浏览器重启（可选）后自动锁定，需要重新输入主密码；主密码本身不会被保存，遗忘后无法找回
-· 复制密码后按设定的秒数自动清理剪贴板（默认 30 秒），清理前会先比对内容，不会误清你随后复制的内容
+· 复制密码后按设定的秒数自动清理剪贴板（默认 30 秒，另有 10 / 15 / 60 / 120 秒可选），清理前会先比对内容，不会误清你随后复制的内容
 · 安全体检、密码生成器与泄露密码字典比对全部在设备端完成，不读取网络
 
 【功能全览】
 · 四种填充入口：输入框获得焦点后出现的钥匙图标、侧边栏、输入框右键菜单、快捷键；登录框位于页面框架内时同样可以填充
 · 登录时自动保存密码：提交登录时弹窗确认，自动去重，可设置域名黑白名单与「不再提示」；密码偏弱或已被多个账号使用时，会在同一弹窗中提醒
-· 密码安全体检：给出 0 到 100 分的综合评分，检查密码复用、弱密码、常见泄露密码和长期未更新，并列出未开启两步验证的条目
-· 密码生成器：随机密码与助记词组两种模式，可自定义长度、字符集或词数，并可排除 0/O、1/l 一类易混淆字符
+· 密码安全体检：给出 0 到 100 分的综合评分，检查密码复用、弱密码、命中内置近千条常见泄露密码、长期未更新这四类问题，并列出未开启两步验证的条目
+· 密码生成器：随机密码与助记词组两种模式，可自定义长度、字符集或词数，并可排除 0/O、1/l 一类易混淆字符；也能在输入框右键直接「生成并填充强密码」，这一步不读取任何已存凭证，会话锁定时同样可用
 · 密码强度检测：按长度、字母、数字、符号四条规则评为弱 / 中 / 强，在添加、编辑和登录保存时同步给出
 · 密码可见性切换：在页面密码框内加入显示或隐藏按钮（默认关闭，在偏好设置中开启），填充后一眼确认输入内容
-· 两步验证（TOTP 2FA）：扫描网页二维码或上传图片即可添加密钥，动态码按 RFC 6238 在你设备上生成，支持自定义算法（SHA1/256/512）、位数（6~8）与周期，不联网、不上传；登录走到第二步时活码就近显示，可一键填入
+· 两步验证（TOTP 2FA）：扫描网页二维码或上传图片即可添加密钥，动态码按 RFC 6238 在你设备上生成，标准 otpauth:// 链接里携带的算法（SHA1 / SHA256 / SHA512）、位数（6 / 7 / 8 位）与周期参数会被一并识别，不联网、不上传；列表与侧边栏同屏显示活码和倒计时环，登录走到第二步时活码就近出现，可一键填入
 · 导入与导出：支持 CSV 和 JSON，可整库导出，也可勾选条目批量导出选中项；自动识别主流密码管理器导出表格的字段（含两步验证密钥列），另有 .aph 加密备份与邮箱备份提醒
-· 回收站与修改历史：删除的条目保留 30 天可恢复，每条密码可保留多份历史快照以便回滚
+· 回收站与修改历史：删除的条目进回收站保留 30 天可恢复，每条密码默认留存 3 份加密历史快照（可调 1~10 份）以便回滚
 · 侧边栏快速添加与只读详情：顶栏「+」就地添加当前站点并预填网址，主密码输入框实时提示大写锁定；每行「查看详情」以抽屉展示完整备注、活码与修改历史，无需进入编辑态
-· 智能搜索与整理：支持拼音与首字母的模糊搜索、侧边栏「本站 / 全站」范围切换、标签分类、收藏置顶、一键去重、批量管理
+· 页面悬浮填充按钮：出现在登录页上，可拖到任意位置并自动吸附屏幕边缘，透明度 10%~100% 可调；浮层自带设置面板，不用切回管理页就能就地调整
+· 键盘完成全流程：侧边栏内上下键选条目、回车填充、Ctrl+C 复制账号、Esc 收起，手不离键盘也能登录
+· 工具栏 Popup 操作中枢：管理页、侧边栏、直接填充、锁定会话都在同一屏，剩余有效时间常驻显示并在临近过期时变色提醒
+· 智能搜索与整理：支持拼音与首字母的模糊搜索、侧边栏「本站 / 全站」范围切换、每条最多 3 个标签的分类与筛选、收藏置顶（上限默认 10 个、可调 1~50，超出时按最少使用自动让位）、一键去重、批量管理
 · 界面与快捷键：6 款色彩主题、中英文界面即时切换，Ctrl+Shift+P 管理 / L 侧边栏 / F 快速填充 / K 内联均可在扩展的快捷键页自定义
 
 【常见问题】
@@ -107,7 +122,9 @@
 · 忘记主密码怎么办？无法找回，也没有任何人能替你重置。请定期用加密备份导出，避免数据丢失
 · 能从其他密码管理器导入吗？可以：在原来用的应用里导出 CSV 或 JSON，再到扩展的导入页上传即可
 · 换电脑或重装浏览器后数据还在吗？不会自动跟过去。请在原设备用加密备份导出 .aph 文件，到新设备的导入页还原
-· 会拖慢网页或侧边栏吗？不会。侧边栏在冷启动、会话失效、快速重启等场景下都保持 1 秒内打开（缓存快路径约 20-50ms）；注入页面的浮层使用隔离的 Shadow DOM，不改变宿主页面样式
+· 会拖慢网页或加载页面吗？侧边栏的打开速度是本项目长期盯住的调优目标：冷启动、会话失效、浏览器快速重启等场景都按 1 秒内出界面来优化，会话有效时走缓存快路径，数据在约 20-50ms 内返回；注入页面的浮层使用隔离的 Shadow DOM，不改变宿主页面样式
+· 对浏览器版本有要求吗？侧边栏用到 Chromium 114 及以上的 Side Panel API；扩展没有声明最低版本限制，因此更旧的内核浏览器同样能安装使用管理页、Popup、右键填充与密码生成器，只是没有侧边栏
+· 填充没生效怎么办？扩展更新或重新加载后，此前已打开的标签页需要刷新一次才能收到填充脚本，这种情况下页面内会有提示、同时发出桌面通知；出于安全限制，只有与页面同主域名的框架会被下发凭证
 · 有没有广告、统计或埋点？没有。权限也只围绕这几件事：检测并填充登录表单、复制密码、读取浏览器本地缓存的网站图标
 
 【温馨提示】
@@ -157,7 +174,7 @@ Free open-source password manager: an AES-256-GCM local vault with autofill sign
 Account Password Helper is a local-first password manager: usernames, passwords and two-factor codes are encrypted and kept in your own browser — there is no account to register and no cloud sync. When you reach a login page it can auto-fill your username and password, tick the remember-me box and, if you allow it, click the sign-in button.
 
 WHY YOU'LL LIKE IT
-◆ It finishes the sign-in, not just the form: pick an entry in the side panel and tap "Fill and sign in", or turn on "Auto-submit login" in preferences. The Ctrl+Shift+F shortcut deliberately only fills and ticks, so nothing is ever submitted by surprise.
+◆ It finishes the sign-in, not just the form: pick an entry in the side panel and tap "Fill and sign in" to run all three steps at once. Ctrl+Shift+F fills and ticks by default, and submits the form only after you turn on "Auto-submit login" in preferences — it never clicks sign-in behind your back.
 ◆ Multi-environment isolation: entries match the exact host name, so development, test, staging and production credentials for the same app stay separate — the thing multi-environment work needs most.
 ◆ Codes live with the passwords: no phone to reach for and no authenticator app to switch to mid-login — one entry holds both secrets.
 ◆ Free, open-source, no subscription: GPL-3.0, auditable source, every feature unlocked.
@@ -165,7 +182,7 @@ WHY YOU'LL LIKE IT
 WHO IT'S FOR
 · Developers: local / test / staging / production host names are managed apart and matched exactly, so you no longer tell environments apart by their notes.
 · Test engineers: import a batch of case accounts, sign in across environments in one action, recover what you deleted, roll back a changed password.
-· Privacy-conscious users: session validity is yours to choose between 1 hour and 7 days, with auto-lock on idle, system lock or browser restart.
+· Privacy-conscious users: session validity comes in nine steps between 1 hour and 7 days, and the idle-lock threshold and the "lock after browser restart" option are switched independently.
 · Everyday sign-ins: new accounts are offered for saving as you sign in, strong passwords are one tap away, and long-unchanged passwords come with expiry reminders.
 · Anyone moving house: switch from another password manager with the whole vault imported at once, instead of typing every entry by hand.
 
@@ -181,21 +198,24 @@ SECURITY ARCHITECTURE
 · Ciphertext goes only into the browser's local stores (persistent local and in-memory session). The account-syncing sync store is never used, so signing into a browser account does not carry your vault off this machine.
 · Changing the master password re-encrypts every entry atomically: it either completes as a whole or leaves the previous state untouched, never a half-encrypted vault.
 · The vault locks on idle timeout, system lock or browser restart (optional) and asks for the master password again. The master password itself is never stored, so it cannot be recovered if forgotten.
-· After you copy a password, the clipboard is cleared on a timer (30 seconds by default) and is compared before clearing, so your most recent copy is never destroyed.
+· After you copy a password, the clipboard is cleared on a timer (30 seconds by default; 10, 15, 60 or 120 also available) and is compared before clearing, so your most recent copy is never destroyed.
 · The security audit, the password generator and the leaked-password dictionary all run on the device, without a network request.
 
 FEATURE SET
 · Four ways to fill: the key icon that appears when a field takes focus, the side panel, the right-click menu on an input, and the keyboard shortcut. Forms inside page frames can be filled as well.
 · Save passwords as you sign in: the extension asks before storing anything, de-duplicates what it catches, and lets you allow or block domains or say "never for this site". Weak or shared passwords are pointed out in the same prompt.
-· Password check-up: a security audit scored from 0 to 100 that looks at reused, weak, commonly leaked and long-unchanged passwords, and lists the entries with no two-factor key set up.
-· Password generator: random passwords or memorable word passphrases, with the length, character set or number of words you choose, and ambiguous characters (0/O, 1/l) can be left out.
+· Password check-up: a security audit scored from 0 to 100 that looks at passwords that are reused, weak, long-unchanged or present in a built-in list of nearly a thousand commonly leaked ones, and separately lists the entries with no two-factor key set up.
+· Password generator: random passwords or memorable word passphrases, with the length, character set or number of words you choose, and ambiguous characters (0/O, 1/l) can be left out. The right-click menu can also generate and fill a strong password on the spot — that step reads nothing from your vault, so it works even while the session is locked.
 · Password strength check: four rules — length, letters, numbers, symbols — rate every password weak, medium or strong while you add, edit or save it.
 · Show or hide passwords: adds a visibility control inside password fields on the page (off by default; turn it on in preferences) so you can check what was filled.
-· Two-factor codes (TOTP 2FA): add a key by scanning the QR code on a page or uploading an image, and the code is generated on your device per RFC 6238 — custom algorithm (SHA1/256/512), digits (6–8) and period supported — with no network request and nothing uploaded; when the login asks for a code, the live one sits next to the field and fills in one click.
+· Two-factor codes (TOTP 2FA): add a key by scanning the QR code on a page or uploading an image, and the code is generated on your device per RFC 6238 — custom algorithm (SHA1/256/512), digits (6/7/8) and period supported — with no network request and nothing uploaded; when the login asks for a code, the live one sits next to the field and fills in one click.
 · Import and export: CSV and JSON, either the whole vault or just the entries you tick; the columns of common password-manager exports are detected automatically, two-factor keys included; plus encrypted .aph backups and email backup reminders.
-· Trash and history: deleted entries stay recoverable for 30 days, and each password keeps earlier snapshots you can roll back to.
+· Trash and history: deleted entries stay recoverable for 30 days, and each password keeps 3 encrypted snapshots you can roll back to (configurable between 1 and 10).
 · Quick add and read-only details: the "+" in the panel header saves an account for the current site with its domain pre-filled, and a live Caps Lock hint sits under every master-password field; "View details" opens a drawer with the full note, the live code and the change history without entering edit mode.
-· Search and tidy-up: fuzzy search that understands pinyin and initials, "this site / all entries" scoping in the side panel, tags, favorites, one-tap duplicate cleanup and batch actions.
+· Floating fill button: a draggable button on the login page that snaps to the screen edge, with opacity adjustable from 10% to 100% and its own settings panel inside the overlay, so you can adjust it without leaving the page.
+· Keyboard all the way: in the side panel, arrow keys move between accounts, Enter fills, Ctrl+C copies the username and Esc closes the panel.
+· Toolbar popup as the hub: management, side panel, direct fill and locking sit on one screen, with the remaining session time always visible and turning colour as expiry approaches.
+· Search and tidy-up: fuzzy search that understands pinyin and initials, "this site / all entries" scoping in the side panel, up to 3 tags per entry, favorites pinned to the top (10 by default, adjustable 1-50, with the least used making way), one-tap duplicate cleanup and batch actions.
 · Interface: 6 color themes, an instant Chinese/English switch, and customizable shortcuts (Ctrl+Shift+P manage / L side panel / F quick fill / K inline).
 
 QUESTIONS
@@ -204,7 +224,9 @@ QUESTIONS
 · What if I forget the master password? Nothing can recover or reset it. Export an encrypted backup regularly, so a forgotten password never costs you the vault.
 · Can I import from another password manager? Yes — export a CSV or JSON from the app you use now, then upload it on the import page.
 · What happens to my vault if I move to a new computer or reinstall the browser? It does not travel on its own. Export an encrypted .aph backup on the old machine, then restore it from the import page on the new one.
-· Will it slow down pages or the side panel? No. The panel opens within a second even on a cold start, an expired session or a quick browser restart (about 20–50ms on the cached path), and the overlays injected into pages use an isolated Shadow DOM that leaves host styles alone.
+· Will it slow down pages? Side-panel open time is a number this project tunes deliberately: cold start, an expired session and a quick browser restart are all optimized against a sub-second target, and about 20–50ms on the cached path when your session is still valid. The overlays injected into pages use an isolated Shadow DOM that leaves host styles alone.
+· Which browser do I need? The side panel uses the Side Panel API, available from Chromium 114. No minimum version is declared, so older Chromium-based browsers still install and give you the management page, the popup, right-click filling and the generator — just not the side panel.
+· A fill didn't land, what now? After the extension updates or reloads, a tab that was already open needs one refresh before it can receive the fill script; when that happens you get an in-page message and a desktop notification rather than silence. For security, credentials are only delivered to frames on the page's own main domain.
 · Any ads, analytics or telemetry? None. The permissions cover exactly what the feature needs: finding and filling login forms, copying passwords, and reading site icons from the browser's local cache.
 
 A friendly note: the extension is designed for developers, testers and everyday sign-in scenarios. We recommend not storing highly sensitive credentials (banking, payment, etc.) in any browser extension.
@@ -272,7 +294,7 @@ node scripts/store-shots/capture.mjs "$PWD/.output/chrome-mv3" firstrun zh
 
 > 演示账号（8 条占位）内联在 `scripts/store-shots/seed.mjs` 的 `DEMO_CSV_ZH` / `DEMO_CSV_EN`；演示登录页 / 2FA 页为同目录的 `demo-login.html`、`demo-2fa.html`；截图与合成脚本也在该目录，完整用法（含 Chrome 启动参数）见其 `README.md`。
 >
-> 💡 版本徽章：脚本读取构建产物里的 `manifest.version`，所以**务必先让分支版本与即将提交的包一致**（当前应为 3.8.0）再截，否则又会出现「截图版本与商店版本不符」。
+> 💡 版本徽章：脚本读取构建产物里的 `manifest.version`，所以**务必先让分支版本与即将提交的包一致**（同步到 `main` 后应为 3.9.0）再截，否则又会出现「截图版本与商店版本不符」。
 
 > 📐 **尺寸对照**：新一组是官方规格的精确 2 倍（1280×800 @2x = 2560×1600），不会触发尺寸校验。`assets/screenshots/` 里的旧 12 张是 2880×1598~1610（约 16:9），既非官方比例、版本也已过期。
 >
@@ -318,15 +340,15 @@ assets/cws-store/marquee-en-1400x560.png       # English (United States) 语言�
 
 **GIF 1：一键登录演示（必做）**
 
-| 项目     | 要求                                                                                                                                                                                                    |
-| -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 内容脚本 | 打开登录页 → 侧边栏选中条目点「填充并登录」（或在偏好设置中开启「自动触发登录」后按 `Ctrl+Shift+F` 只填充、再手动点击）→ 账号密码自动填充 → 「记住我 / 同意条款」自动勾选 → 登录按钮自动点击 → 登录成功 |
-| 时长     | 10–15 秒                                                                                                                                                                                                |
-| 宽度     | 800–1000px                                                                                                                                                                                              |
-| 文件大小 | ≤ 5MB（可用 [ezgif.com](https://ezgif.com) 或 `ffmpeg` 压缩）                                                                                                                                           |
-| 存放位置 | `docs/demo-login.gif`（README 首屏引用）                                                                                                                                                                |
-| 录制工具 | 推荐 macOS 自带屏幕录制 / LICEcap / ScreenToGif                                                                                                                                                         |
-| 压缩命令 | `ffmpeg -i input.mp4 -vf "fps=15,scale=900:-1" -loop 0 demo-login.gif`                                                                                                                                  |
+| 项目     | 要求                                                                                                                                                                                                   |
+| -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 内容脚本 | 打开登录页 → 侧边栏选中条目点「填充并登录」（或在偏好设置中开启「自动触发登录」后按 `Ctrl+Shift+F`，两条路径结果相同）→ 账号密码自动填充 → 「记住我 / 同意条款」自动勾选 → 登录按钮自动点击 → 登录成功 |
+| 时长     | 10–15 秒                                                                                                                                                                                               |
+| 宽度     | 800–1000px                                                                                                                                                                                             |
+| 文件大小 | ≤ 5MB（可用 [ezgif.com](https://ezgif.com) 或 `ffmpeg` 压缩）                                                                                                                                          |
+| 存放位置 | `docs/demo-login.gif`（README 首屏引用）                                                                                                                                                               |
+| 录制工具 | 推荐 macOS 自带屏幕录制 / LICEcap / ScreenToGif                                                                                                                                                        |
+| 压缩命令 | `ffmpeg -i input.mp4 -vf "fps=15,scale=900:-1" -loop 0 demo-login.gif`                                                                                                                                 |
 
 **GIF 2：TOTP 两步验证接力（加分）**
 
@@ -555,7 +577,7 @@ https://liaolongdong.github.io/account-password-helper/privacy.html
 Account Password Helper is a free, open-source, local-first password manager — one-click login (autofill → tick the remember-me / "I agree" box → click login, not just form fill), exact-domain matching to isolate dev/test/staging/prod accounts, built for developers and QA engineers. No cloud sync, no account, no subscription. AES-256-GCM encrypted, all credential data stays in your browser.
 
 Key differentiators:
-• One-click login: the side panel's "Fill and sign in" action (or the opt-in "Auto-submit login" preference) autofills credentials, ticks the consent box, and clicks login — complete sign-in in under 1 second. The Ctrl+Shift+F shortcut deliberately only fills and ticks, so it never submits a form by surprise.
+• One-click login: the side panel's "Fill and sign in" action chains autofill, consent-box tick and the login click into one step. Ctrl+Shift+F fills and ticks by default, and submits the form only after you opt in to "Auto-submit login".
 • Multi-environment isolation: exact-domain matching separates dev/test/staging/prod accounts for the same site
 • Built-in TOTP authenticator: RFC 6238 codes generated locally, auto-anchors on GitHub-style 2FA pages
 • Offline security audit: 0–100 score weighted across 4 dimensions (reuse 35 / weak 25 / commonly leaked 20 / stale 20), all computed on-device
@@ -617,7 +639,7 @@ No specific website accounts are required. The extension treats all websites uni
 账号密码管理助手是一款免费、开源、本地优先的密码管理器，专为开发者、测试工程师和注重隐私的用户打造。所有凭证使用 PBKDF2（600,000 次迭代）+ AES-256-GCM 在本地加密，密码数据不经过网络——无云端同步、无账号、无订阅。
 
 核心差异化价值：
-• 一键登录：侧边栏「填充并登录」（或在偏好设置中开启「自动触发登录」）自动填充账号、勾选「记住我 / 同意条款」、点击登录按钮，1 秒内完成登录；`Ctrl+Shift+F` 有意只做填充与勾选，不会替你提交表单
+• 一键登录：侧边栏「填充并登录」把填充、勾选「记住我 / 同意条款」、点击登录按钮连成一步；`Ctrl+Shift+F` 默认只做填充与勾选，只有在偏好设置中开启「自动触发登录」后才会代为提交表单
 • 多环境账号隔离：精确域名匹配区分同一站点的 dev/test/staging/prod 账号
 • 内置 TOTP 验证器：RFC 6238 验证码本地生成，GitHub 式两步登录自动锚定活码胶囊
 • 离线安全体检：0–100 评分，四个计分维度按权重合计（复用 35 / 弱密码 25 / 常见泄露 20 / 长期未更新 20），「未开启两步验证」仅列示不计分，全程本地计算

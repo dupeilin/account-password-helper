@@ -49,6 +49,17 @@ replaceOnce(
   `property="og:description"\n      content="${EN_DESCRIPTION}"`,
 );
 replaceOnce(/rel="canonical"\s+href="[^"]*"/, `rel="canonical"\n      href="${SITE}/privacy.en.html"`);
+replaceOnce(/property="og:url"\s+content="[^"]*"/, `property="og:url"\n      content="${SITE}/privacy.en.html"`);
+replaceOnce(/property="og:locale"\s+content="zh_CN"/, 'property="og:locale"\n      content="en_US"');
+replaceOnce(
+  /property="og:locale:alternate"\s+content="en_US"/,
+  'property="og:locale:alternate"\n      content="zh_CN"',
+);
+replaceOnce(/name="twitter:title"\s+content="[^"]*"/, `name="twitter:title"\n      content="${EN_TITLE}"`);
+replaceOnce(
+  /name="twitter:description"\s+content="[^"]*"/,
+  `name="twitter:description"\n      content="${EN_DESCRIPTION}"`,
+);
 
 // hreflang 三条交替声明随 privacy.html 一并继承（双语互指内容相同，无需按语言改写）
 

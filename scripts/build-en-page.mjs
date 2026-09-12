@@ -31,6 +31,25 @@ const EN_KEYWORDS =
 const EN_JSONLD_DESCRIPTION =
   'Free, open-source local password manager: one-keystroke login (fill + tick + click), PBKDF2 600K iterations + per-field AES-256-GCM encryption, built-in TOTP 2FA, security audit and password generator, instant side panel (~20-50ms from cache). Password data is never uploaded.';
 
+// SoftwareApplication 的语言相关字段：逐字段替换，版本 / 截图 / URL / 作者等非语言字段仍由 index.html 单一来源提供。
+// EN_FEATURE_LIST 必须与 index.html 的 featureList 一一对应，条数不一致时生成阶段直接报错（见下方守卫）。
+const EN_APP_NAME = 'Account Password Helper — Local-First Password Manager';
+const EN_BROWSER_REQUIREMENTS =
+  'Chrome 114 or newer for the Side Panel API (no minimum_chrome_version is declared, so older builds simply lose the side panel). Also works in Edge, Brave and other Chromium-based browsers.';
+const EN_FEATURE_LIST = [
+  'One-click login: autofill + tick "remember me / I agree" + click sign in',
+  'Exact-host matching keeps dev / test / staging / prod accounts apart',
+  'Built-in TOTP 2FA (RFC 6238); add secrets by QR scan or image upload',
+  'Per-field AES-256-GCM encryption at rest, keyed by PBKDF2-SHA256 with 600,000 iterations',
+  'Offline security audit: a 0-100 score weighted across four dimensions, computed on your machine',
+  'Password generator: random passwords and a passphrase mode',
+  'Four fill paths: inline panel, side panel, context menu, keyboard shortcut',
+  'CSV / JSON import and export with field auto-detection for common password-manager exports',
+  'Encrypted .aph backup and restore, plus email backup composed locally via mailto',
+  'Side panel opens instantly in every state (~20-50ms to data on the cached warm path)',
+  'Six color themes and a bilingual 中文 / English interface',
+];
+
 const EN_HOWTO_JSONLD = `<!-- HowTo structured data: English version, mirrored from the Chinese HowTo block in index.html -->
     <script type="application/ld+json">
       {
@@ -127,6 +146,25 @@ replaceEvery('href="./privacy.html"', 'href="./privacy.en.html"');
 replaceEvery('href="./pricing.html"', 'href="./pricing.en.html"');
 replaceEvery('href="./compare.html"', 'href="./compare.en.html"');
 replaceEvery('href="./blog/"', 'href="./blog/index.en.html"');
+// ---------- SoftwareApplication：语言相关字段换成英文 ----------
+// featureList 由本脚本单独维护一份英文，条数不一致即视为中文源已变更而英文未跟进，直接失败
+const zhFeatureList = html.match(/"featureList": \[[\s\S]*?\],/)?.[0];
+if (!zhFeatureList) throw new Error('未找到 featureList，请检查 index.html 的 SoftwareApplication 块');
+const zhFeatureCount = (zhFeatureList.match(/\n\s{10}"/g) || []).length;
+if (zhFeatureCount !== EN_FEATURE_LIST.length)
+  throw new Error(
+    `featureList 条数不一致：index.html ${zhFeatureCount} 条 vs 本脚本 ${EN_FEATURE_LIST.length} 条，请同步英文文案`,
+  );
+
+replaceOnce(
+  /"name": "Account Password Helper · 账号密码管理助手",\n(\s*)"applicationCategory"/,
+  `"name": "${EN_APP_NAME}",\n$1"applicationCategory"`,
+);
+replaceOnce(/"browserRequirements": "[^\n]*",/, `"browserRequirements": "${EN_BROWSER_REQUIREMENTS}",`);
+replaceOnce(
+  /"featureList": \[[\s\S]*?\],/,
+  `"featureList": [\n${EN_FEATURE_LIST.map(feature => `          ${JSON.stringify(feature)}`).join(',\n')}\n        ],`,
+);
 replaceOnce(/"description": "开源免费的本地密码管理器[^\n]*",/, `"description": "${EN_JSONLD_DESCRIPTION}",`);
 // 英文版：中文 FAQPage / HowTo 结构化数据块替换为英文版，避免语言错配
 // FAQPage 与可见 FAQ 同源（faqEntries 取自 FAQS 数组），文案不再单独维护
