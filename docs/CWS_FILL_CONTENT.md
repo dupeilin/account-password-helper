@@ -398,9 +398,11 @@ assets/cws-store/marquee-en-1400x560.png       # English (United States) 语言�
 
 > 非必须，但官方推荐提供演示视频/GIF 展示核心功能，能显著提升审核印象。
 >
-> ⚠️ **旧素材已退役**：仓库里的 `docs/demo-login.gif` / `.mp4` / `.webp` 是真机录屏，
-> 画面含作者的真实 GitHub 用户名、实时 TOTP 活码和已登录的业务面板，属于凭据泄露素材。
-> README 首屏已改用 `assets/cws-store/screen-1-one-click-login.png`，旧三件套待删除。
+> ⚠️ **旧素材已退役**：仓库里早期的 `docs/demo-login.*` 是真机录屏，画面含作者的真实
+> GitHub 用户名、实时 TOTP 活码和已登录的业务面板，属于凭据泄露素材。
+> **2026-09-13 已重录**：`docs/demo-login.webp` / `demo-login-en.webp` / `demo-login.gif`
+> 现由 `scripts/store-shots/record.mjs` 从占位演示页生成（`example.com` 数据），
+> README 首屏已换回动图。**唯独 `docs/demo-login.mp4` 仍是旧真机录屏，不得引用。**
 > **今后任何截图与录屏一律基于 `scripts/store-shots/` 的占位演示页**
 > （`demo-login.html` / `demo-2fa.html` + `example.com` 数据），不要录制真实账号画面。
 
@@ -409,12 +411,12 @@ assets/cws-store/marquee-en-1400x560.png       # English (United States) 语言�
 | 项目     | 要求                                                                                                                                                                                                   |
 | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | 内容脚本 | 打开登录页 → 侧边栏选中条目点「填充并登录」（或在偏好设置中开启「自动触发登录」后按 `Ctrl+Shift+F`，两条路径结果相同）→ 账号密码自动填充 → 「记住我 / 同意条款」自动勾选 → 登录按钮自动点击 → 登录成功 |
-| 时长     | 10–15 秒                                                                                                                                                                                               |
+| 时长     | 7–15 秒（当前实现为 4 个关键帧、1.4/1.2/2/2.4 秒，一轮约 7 秒）                                                                                                                                        |
 | 宽度     | 800–1000px                                                                                                                                                                                             |
 | 文件大小 | ≤ 5MB（可用 [ezgif.com](https://ezgif.com) 或 `ffmpeg` 压缩）                                                                                                                                          |
-| 存放位置 | `docs/demo-login.gif`（**待重新录制**，录制脚本见 `scripts/store-shots/README.md`）                                                                                                                    |
-| 录制工具 | 推荐 macOS 自带屏幕录制 / LICEcap / ScreenToGif                                                                                                                                                        |
-| 压缩命令 | `ffmpeg -i input.mp4 -vf "fps=15,scale=900:-1" -loop 0 demo-login.gif`                                                                                                                                 |
+| 存放位置 | `docs/demo-login.gif`（900px 宽，推广文档引用）+ `docs/demo-login.webp` / `docs/demo-login-en.webp`（1152×720，README 首屏）                                                                           |
+| 录制工具 | `node scripts/store-shots/record.mjs "$PWD/.output/chrome-mv3" zh\|en`——CDP 驱动本地 Chrome 走扩展真实填充链路取关键帧，再合成品牌标题带                                                               |
+| 压缩命令 | 由 `record.mjs` 内部调用 `ffmpeg` 完成（webp：`-fps_mode passthrough -c:v libwebp -quality 72`；gif：`palettegen=stats_mode=diff` + `paletteuse`）                                                     |
 
 **GIF 2：TOTP 两步验证接力（加分）**
 
@@ -807,7 +809,7 @@ No specific website accounts are required. The extension treats all websites uni
 - [ ] 英文语言版本已添加（Languages → English）
 - [ ] Marquee 宣传图（1400×560）已在商店上传
 - [ ] Small Promo Tile（440×280）已在商店上传
-- [ ] 演示 GIF 已制作（`docs/demo-login.gif`，可选但推荐；**旧文件因含真实凭据已退役，需从占位演示页重录后才能使用**）
+- [x] 演示 GIF 已制作（`docs/demo-login.gif` + `docs/demo-login{,-en}.webp`，2026-09-13 由 `record.mjs` 从占位演示页重录，不含真实凭据）
 - [ ] 7.2 英文提名文案已逐字段粘贴到 One Stop Support 表单
 - [ ] 插件 ID（`fgimkdodpjfkddmildjieojpfakpanli`）与联系邮箱已填写
 - [ ] 提交后记录日期（6 个月内不可重复提名）

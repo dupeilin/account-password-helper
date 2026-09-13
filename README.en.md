@@ -26,7 +26,7 @@ A **free, open-source** local Chrome password manager: **one-click login** that 
 <p align="center">
   <img src="./assets/icons/icon.svg" alt="Account Password Helper extension icon" width="120" />
   <br/>
-  <img src="./assets/cws-store/screen-1-one-click-login.png" alt="One-click login demo: pick an entry in the side panel and it fills the credentials, ticks the consent box and clicks sign in" width="100%" />
+  <img src="./docs/demo-login-en.webp" alt="One-click login demo: pick an entry in the side panel and it fills the credentials, ticks the consent box and clicks sign in" width="100%" />
   <br/>
   <sub>Ctrl+Shift+F → autofill → tick "remember me / I agree" → (with "Auto-submit login" on) click login → 2FA live-code handoff → done in 1 second</sub>
 </p>

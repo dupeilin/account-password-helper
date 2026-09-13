@@ -160,7 +160,7 @@
 | ----------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `assets/screenshots/01..12-*.png`（12 张）      | 真实 GitHub 用户名 `liaolongdong`、`924902324@qq.com` / `924902325@qq.com`、当时的 TOTP 活码、DeepSeek 登录页与微信登录二维码、开发态扩展 ID、`v2.12.0` / `v2.15.0` 旧版本角标                                 |
 | `assets/cws-store/01..08-*.png`（8 张旧商店图） | 与上表同源的真实演示库：`02-password-list.png` 首行即 `liaolongdong` + github.com 的 TOTP 活码 `970676`；`06-sidepanel-fill.png` 的自动保存弹窗里**密码以明文出现**（`123456qwerty`，账号 `924902325@qq.com`） |
-| `docs/demo-login.{webp,gif,mp4}`（README 首屏） | 真实用户名输入在 `github.com/login` 页面上，并出现 TOTP 活码 `548365`                                                                                                                                          |
+| `docs/demo-login.{webp,gif,mp4}`（README 首屏） | 真实用户名输入在 `github.com/login` 页面上，并出现 TOTP 活码 `548365`。**2026-09-13：`.webp` / `.gif` 已被占位演示页重录覆盖，仅 `.mp4` 仍是旧真机录屏（未引用）**                                             |
 
 **为什么算"公开"**：`.github/workflows/static.yml` 用 `path: '.'` 把**整个仓库**上传为 Pages 产物，因此这些图片即使没有任何页面引用，也能按 URL 直接取到并被爬虫/图床缓存；而线上商店列表当前挂的产品截图正是这批 v2.12.0 旧图（见本文「🟡 商店驳回与修正」的残留待办 ①、手册 §2.7「仍待处理」），同一批真实账号画面在 Chrome 应用商店也是公开的。README 与 `index.html` / `en.html` 的可见引用本轮已改到占位素材，但**文件本身仍在仓库与全部历史提交里**。
 
@@ -170,9 +170,11 @@
 
 1. **最小**：只删工作区文件 + 从 README / 官网彻底摘链（历史提交与 Pages 旧构建仍可取到，风险残留）。
 2. **推荐**：在 1 之上用 `git filter-repo` 改写历史并强推，随后请 GitHub 侧清理缓存的 commit 对象（需开 ticket）；Chrome 商店旧截图随下一次提交换成 `screen-{1..9}` 占位图。
-3. 顺带把 `docs/demo-login.*` 用 `scripts/store-shots/` 的占位演示页（`demo-login.html`，`example.com` 数据）重录一版，README 首屏动图不缩水。
+3. 顺带把 `docs/demo-login.*` 用 `scripts/store-shots/` 的占位演示页（`demo-login.html`，`example.com` 数据）重录一版，README 首屏动图不缩水。✅ **2026-09-13 已完成**。
 
 **本轮进度（2026-09-12）**：README 首屏（`README.md:29` / `README.en.md:29`）已从 `docs/demo-login.webp` 换成 `assets/cws-store/screen-1-one-click-login.png`；`docs/CWS_FILL_CONTENT.md`、`docs/账号密码管理助手曝光提升执行手册.md`、`docs/promo/wechat-article-draft.md`、`docs/promo/weibo-drafts.md` 里所有把 `docs/demo-login.gif` 或 `assets/screenshots/` 当作**推荐配图**的指针已收口到 `scripts/store-shots/` 占位素材，并逐一标注旧素材退役原因。按「只重截商店与 README 用的图，仓库旧图不动」的决策，**文件本身与历史提交未做任何删改**。
+
+**进度（2026-09-13）**：新增 `scripts/store-shots/record.mjs`，四个关键帧全部走扩展自身的真实填充链路（脚本不代填任何字段），README 首屏换回动图——`README.md:29` → `docs/demo-login.webp`、`README.en.md:29` → `docs/demo-login-en.webp`（此前中英共用一张，英文画面里是中文标签），`docs/demo-login.gif` 同步重录供推广文档引用。画面里的账号全部是 `demo-admin@example.com` 等 `example.com` 占位数据。`docs/demo-login.mp4` 按「仓库旧文件不动」的决策保留在原处，没有任何文档引用它；若要彻底断掉 Pages 可取性，需走上面第 1／2 项。
 
 需要执行的命令我在对话里给出，**不由我代为运行**（参见 [[feedback-give-commands]] 口径：改写历史与强推属不可逆操作）。
 

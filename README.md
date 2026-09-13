@@ -26,7 +26,7 @@
 <p align="center">
   <img src="./assets/icons/icon.svg" alt="账号密码管理助手扩展图标" width="120" />
   <br/>
-  <img src="./assets/cws-store/screen-1-one-click-login.png" alt="一键登录演示：侧边栏选中条目后自动填充账号密码、勾选同意条款并点击登录" width="100%" />
+  <img src="./docs/demo-login.webp" alt="一键登录演示：侧边栏选中条目后自动填充账号密码、勾选同意条款并点击登录" width="100%" />
   <br/>
   <sub>Ctrl+Shift+F → 自动填充 → 勾选「记住我 / 同意条款」→（开启「自动触发登录」后）自动点击登录 → 2FA 活码接力，1 秒完成</sub>
 </p>

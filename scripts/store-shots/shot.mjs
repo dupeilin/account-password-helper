@@ -22,6 +22,9 @@ export const LEFT_W = W - PANEL_W;
 
 const FONT = 'PingFang SC, Helvetica Neue, Arial, sans-serif';
 
+/** 等待毫秒数（各脚本共用，避免为同一件事各写一份 Promise 包装）。 */
+export const wait = ms => new Promise(r => setTimeout(r, ms));
+
 let EXT_ID = null;
 
 /**
@@ -194,6 +197,38 @@ export async function warmFavicons(hosts, timeout = 4000) {
 }
 
 /**
+ * 打开侧边栏页面、把 active tab 切回目标页，再 reload 侧边栏，使其命中该站点账号。
+ *
+ * 侧边栏按 `active + currentWindow` 取目标标签，因此必须在 reload 之前把演示页置前，
+ * 否则它会把自己当目标页、退化成「列出全部条目」。
+ */
+export async function openPanelScopedTo(tabId) {
+  const panel = await newTab(extUrl('sidepanel.html'));
+  await wait(1200);
+  const { s: ts } = await attachTo(t => t.id === tabId);
+  await ts.send('Target.activateTarget', { targetId: tabId }).catch(() => {});
+  ts.close();
+  await wait(500);
+  const { s: ps } = await attachTo(t => t.id === panel.id);
+  await ps.send('Page.reload', { ignoreCache: true });
+  await wait(4000);
+  return { s: ps, panelId: panel.id };
+}
+
+/**
+ * 关掉上一轮跑批遗留的演示页标签。
+ *
+ * 每次跑批都会重新 loadUnpacked 扩展，已打开页面里的内容脚本随之失效（孤立上下文）。
+ * 这些标签如果留着，按 URL 反查标签的逻辑就可能命中它们并一直报
+ * "Receiving end does not exist"（实测 screen-9 连续 5 次都打在陈旧标签上）。
+ */
+export async function closeStaleDemoTabs() {
+  const stale = (await listTargets()).filter(t => t.type === 'page' && /^https:\/\/[^/]*\.example\.com\//.test(t.url));
+  for (const t of stale) await closeTab(t.id);
+  if (stale.length) console.log(`已清理 ${stale.length} 个遗留演示页标签`);
+}
+
+/**
  * 顶部标题带。
  *
  * 版式要点：左侧一条品牌色竖条做视觉锚点；标题与副标题拉开行距（基线相距 34px）；
@@ -222,13 +257,35 @@ function band(ctx) {
 }
 
 /**
+ * 光标叠加层。
+ *
+ * 演示动图由若干关键帧组成，而页面级截图抓不到系统指针，「点了哪里」在画面里不可见。
+ * 因此合成阶段按真实元素的矩形中心画箭头与点击涟漪——坐标取自点击时的 getBoundingClientRect，
+ * 即点击确实发生在这些位置。入参是 1280×800 逻辑像素，输出画布为 2 倍，故整体缩放 2。
+ */
+function cursorLayer(x, y, pressed) {
+  const ring = pressed
+    ? '<circle cx="0" cy="0" r="17" fill="#4c8df6" fill-opacity="0.16" stroke="#4c8df6" stroke-opacity="0.65" stroke-width="2.5"/>'
+    : '';
+  return `<svg width="${W * 2}" height="${H * 2}" xmlns="http://www.w3.org/2000/svg">
+    <g transform="translate(${x * 2} ${y * 2}) scale(2)">
+      ${ring}
+      <path d="M0 0 L0 15.4 L3.8 11.9 L6.1 17.3 L8.7 16.2 L6.4 10.9 L11.6 10.9 Z"
+        fill="#ffffff" stroke="#1f2937" stroke-width="1.1" stroke-linejoin="round" />
+    </g>
+  </svg>`;
+}
+
+/**
  * 合成一张商店截图：顶部标题带 + 下方并排的界面面板。
  *
  * @param {{title: string, sub: string}} ctx 标题带文案，须与商店文案同口径（无竞品品牌名、无绝对化表述）
  * @param {{buf: Buffer, width: number}[]} panes 面板，width 为 CSS px，总和须为 1280
  * @param {string} out 输出路径
+ * @param {{cursor?: {x: number, y: number, pressed?: boolean}, quiet?: boolean}} [opts]
+ *   `cursor` 为逻辑像素坐标的光标叠加层（演示动图用）；`quiet` 关闭逐张写入日志
  */
-export async function compose(ctx, panes, out) {
+export async function compose(ctx, panes, out, opts = {}) {
   const layers = [];
   let x = 0;
   for (const p of panes) {
@@ -251,11 +308,16 @@ export async function compose(ctx, panes, out) {
       });
     }
   }
+  const top = [];
+  if (opts.cursor) {
+    const { x: cx, y: cy, pressed } = opts.cursor;
+    top.push({ input: Buffer.from(cursorLayer(cx, cy, pressed)), left: 0, top: 0 });
+  }
   await sharp({
     create: { width: W * 2, height: H * 2, channels: 4, background: '#ffffff' },
   })
-    .composite([{ input: Buffer.from(band(ctx)), left: 0, top: 0 }, ...layers])
+    .composite([{ input: Buffer.from(band(ctx)), left: 0, top: 0 }, ...layers, ...top])
     .png()
     .toFile(out);
-  console.log('wrote', out);
+  if (!opts.quiet) console.log('wrote', out);
 }
