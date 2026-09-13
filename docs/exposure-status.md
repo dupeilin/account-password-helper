@@ -112,8 +112,8 @@
 2. **粘贴前先跑自检**（`docs/CWS_PUBLISHING_GUIDE.md`「快速校验命令」末尾的脚本）：期望 `paste blocks: 6 | banned hits: none`，且中英 `extensionName` / `extensionDescription` 与「第二步」的粘贴块逐字一致、长度 ≤132。
 3. 登录 [Developer Dashboard](https://chrome.google.com/webstore/devconsole) → 该扩展 → **新建草稿**，上传第 1 步的 zip（版本号取同步后的 **3.9.0**——只要大于线上 3.7.0 即可；若 Dashboard 拒绝该版本号，再到 `main` 上让 release-please 升一版）。
 4. _store listing_ 文本一律从 `docs/CWS_FILL_CONTENT.md`「第二步」整段复制：中文 Name / 摘要 / 说明 + 英文 Name / 摘要 / 说明（该文件是唯一事实来源，**不要再从手册复制**）。
-5. 图片：marquee 与小推广图**已重绘为合规版本**（`assets/cws-store/`，源在 `imgs/store-creatives/`），直接上传即可。**产品截图候选已扩到 9 张（`screen-1..9`）**，由 `scripts/store-shots/` 从占位演示页生成，画面全部是 `example.com` 数据、不含任何真实账号；英文页同一批 `capture` 换 `en` 参数跑，产出带 `-en` 后缀的同名文件。旧的 `assets/screenshots/01..12` 与 `assets/cws-store/01..08`（v2.12.0 真机图、含真实凭据）不再作为上传素材。
-   ⚠️ **上传前逐张核对版本徽章**：徽章取自构建产物的 `manifest.version`。18 张（9 × 中英）已于 2026-09-13 00:58-01:05 整批重截，抽查 `screen-3` / `screen-4` / `screen-5` 徽章统一为 **`v3.7.0`**（此前 `screen-5` 残留上一批的 `v3.8.0`，混批状态已消除）——但本地分支仍是 3.7.0，第 1 步要提交的却是 **3.9.0**。同步分支后必须按 `scripts/store-shots/README.md`「复现步骤」**再整批重截一次**（中英各三批，`firstrun` 换全新 profile），确认每张徽章都是 `v3.9.0` 才上传——「截图版本与商店版本不符」是已知的驳回与信任风险点（图片里的文字同属商店元数据）。商店每语言页上限 5 张，按卖点排序取舍即可。
+5. 图片：marquee 与小推广图**已重绘为合规版本**（`assets/cws-store/`，源在 `imgs/store-creatives/`），直接上传即可。**产品截图候选已扩到 14 张（`screen-1..14`）**，由 `scripts/store-shots/` 从占位演示页生成，画面全部是 `example.com` 数据、不含任何真实账号；英文页同一批 `capture` 换 `en` 参数跑，产出带 `-en` 后缀的同名文件。旧的 `assets/screenshots/01..12` 与 `assets/cws-store/01..08`（v2.12.0 真机图、含真实凭据）不再作为上传素材。
+   ⚠️ **上传前逐张核对版本徽章**：徽章取自构建产物的 `manifest.version`。分支已同步 `origin/main`（`package.json` = **3.9.0**），**28 张（14 × 中英）于 2026-09-13 全新 profile 整批重截**，徽章统一为 **`v3.9.0`**——「截图版本与商店版本不符」是已知的驳回与信任风险点（图片里的文字同属商店元数据）。商店每语言页上限 5 张，按卖点排序取舍即可。
 6. 隐私标签页：权限逐项说明（用「第二步 → 权限说明」原文，其中 `webNavigation` 的说法已按实测改为「仅枚举当前标签页框架，不监听导航」）、隐私政策 URL 与官网一致。
 7. 提交审核，并在日历上记一次复盘：若再次被拒，把驳回文本原样补进 `CWS_PUBLISHING_GUIDE.md`「第四步 → 常见驳回原因」。
 

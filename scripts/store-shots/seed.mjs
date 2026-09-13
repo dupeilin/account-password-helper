@@ -47,6 +47,18 @@ const HISTORY_USERS = (process.env.SHOT_HISTORY_USERS || 'ops@example.com')
 /** 轮换用的新密码（依次套用，需与 CSV 里的原密码不同才会产生历史记录）。 */
 const ROTATED_PASSWORDS = ['Demo!Rotated2026a', 'Demo!Rotated2026b'];
 
+/**
+ * 要移入回收站的条目用户名（逗号分隔，可用 SHOT_TRASH_USERS 覆盖）。
+ *
+ * 「回收站」截图展示的是「删除后 30 天内可恢复」，空回收站没有内容可拍。
+ * 刻意选文档类条目（intern@example.com）：它不在任何一张截图的重点位置，
+ * 删掉不会让多环境 / TOTP / 体检那几个画面少掉关键行。
+ */
+const TRASH_USERS = (process.env.SHOT_TRASH_USERS || 'intern@example.com')
+  .split(',')
+  .map(x => x.trim())
+  .filter(Boolean);
+
 if (!EXT_DIR || !['zh', 'en'].includes(LANG)) {
   console.error('usage: node seed.mjs <path-to-.output/chrome-mv3> [zh|en] [demo.csv]');
   process.exit(1);
@@ -109,6 +121,8 @@ const LABELS = {
     unfavorite: '取消收藏',
     edit: '编辑',
     update: '更新',
+    delete: '删除',
+    moveToTrash: '移入回收站',
   },
   en: {
     setup: 'Set master password and start',
@@ -119,6 +133,8 @@ const LABELS = {
     unfavorite: 'Unfavorite',
     edit: 'Edit',
     update: 'Update',
+    delete: 'Delete',
+    moveToTrash: 'Move to Trash',
   },
 };
 const L = LABELS[LANG];
@@ -219,6 +235,20 @@ const changePassword = next => `(() => {
 
 const wait = ms => new Promise(r => setTimeout(r, ms));
 
+const deleteSel = `button[aria-label=${JSON.stringify(L.delete)}]`;
+
+/** 点开指定用户名所在行的删除按钮（弹出的是 ElMessageBox 确认框）。 */
+const deleteRow = user => `(() => {
+  const wanted = ${JSON.stringify(user)};
+  const rows = [...document.querySelectorAll('.el-table__row')];
+  const row = rows.find((r) => (r.textContent || '').includes(wanted));
+  if (!row) return 'row not found: ' + wanted;
+  const btn = row.querySelector(${JSON.stringify(deleteSel)});
+  if (!btn) return 'delete button not found in row: ' + wanted;
+  btn.click();
+  return 'delete requested for ' + wanted;
+})()`;
+
 await initExtension(EXT_DIR);
 const t = await newTab(extUrl('options.html'));
 const { s } = await attachTo(x => x.id === t.id);
@@ -310,6 +340,25 @@ console.log(
     `(async () => {
       const r = await chrome.storage.local.get('password_change_history');
       return Array.isArray(r.password_change_history) ? r.password_change_history.length : 'missing';
+    })()`,
+  ),
+);
+
+// 移入回收站：确认框是 ElMessageBox，主按钮文案随语言（「移入回收站」/「Move to Trash」）
+for (const user of TRASH_USERS) {
+  await wait(1500);
+  console.log('trash:', await evalIn(s, deleteRow(user)));
+  await wait(1200);
+  console.log('trash:', await evalIn(s, clickExact(L.moveToTrash)));
+  await wait(2500);
+}
+console.log(
+  'trash rows:',
+  await evalIn(
+    s,
+    `(async () => {
+      const r = await chrome.storage.local.get('account_passwords_trash');
+      return Array.isArray(r.account_passwords_trash) ? r.account_passwords_trash.length : 'missing';
     })()`,
   ),
 );

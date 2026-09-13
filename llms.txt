@@ -14,7 +14,7 @@
 - **Account required**: No
 - **Subscription**: No
 - **Last updated**: 2026-09-12 · **Latest release**: v3.9.0 (2026-09-11)
-- **Quality**: 640 automated test cases across 54 test files
+- **Quality**: 642 automated test cases across 55 test files
 
 ## Key Features
 

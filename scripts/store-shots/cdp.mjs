@@ -25,10 +25,29 @@ export class Session {
     });
   }
 
-  send(method, params = {}) {
+  /**
+   * 发一条 CDP 命令并等结果。
+   *
+   * 必须带超时：调试端口偶尔会收下命令却永不回包（实测截图批次整体挂死、CPU 时间
+   * 不再增长），没有超时的话整批跑批会无限期阻塞且看不到卡在哪一条命令上。
+   */
+  send(method, params = {}, timeoutMs = 30000) {
     const id = ++this.id;
     return new Promise((resolve, reject) => {
-      this.pending.set(id, { resolve, reject });
+      const timer = setTimeout(() => {
+        this.pending.delete(id);
+        reject(new Error(`CDP timeout after ${timeoutMs}ms: ${method}`));
+      }, timeoutMs);
+      this.pending.set(id, {
+        resolve: value => {
+          clearTimeout(timer);
+          resolve(value);
+        },
+        reject: err => {
+          clearTimeout(timer);
+          reject(err);
+        },
+      });
       this.ws.send(JSON.stringify({ id, method, params }));
     });
   }

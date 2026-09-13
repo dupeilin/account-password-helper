@@ -3,7 +3,7 @@ title: 'Zero Cloud, Open Source, Built for Developers: Why I Built Another Brows
 description: Why does the world need another password manager? The case for a local-first, open-source tool built around multi-environment logins, one-click sign-in, and zero network trust.
 tags: password manager,browser extension,open source,chrome extension,local-first
 date: 2026-08-28
-modified: 2026-09-09
+modified: 2026-09-13
 author: liaolongdong
 image: imgs/blog-cover-01-local-first.png
 ---
@@ -22,7 +22,7 @@ It's live on the [Chrome Web Store](https://chromewebstore.google.com/detail/acc
 
 Before writing a line of code, I spent weeks with every mainstream option. Three gaps kept showing up:
 
-**Gap 1: Multi-environment account isolation.** Password managers decide which credentials to show you by matching the current domain. Most do fuzzy matching — same registrable domain means a hit. For regular users that's a kindness; for developers it's a hazard. A test account filling into a production login form can range from annoying to genuinely destructive. I wanted **exact matching**: only entries whose host matches exactly are shown. Local development hosts like `localhost` are an explicit exception, so local tooling keeps working.
+**Gap 1: Multi-environment account isolation.** Password managers decide which credentials to show you by matching the current domain. Most do fuzzy matching — same registrable domain means a hit. For regular users that's a kindness; for developers it's a hazard. A test account filling into a production login form can range from annoying to genuinely destructive. I wanted **exact matching**: only entries whose host matches exactly are shown. Local development hosts like `localhost` and `127.0.0.1` follow a port-aware rule instead — a page with no port shows everything so local tooling keeps working, while a page with a port only sees entries on that same port (entries that carry no port of their own always stay).
 
 **Gap 2: Logging in is not filling.** A complete login is: fill username + fill password + tick the agreement checkbox + click the login button — plus a 2FA code if there's a second step. Existing tools stop after step two. Account Password Helper chains that whole flow behind one shortcut, `Ctrl+Shift+F` (`Cmd+Shift+F` on macOS): it fills username and password and ticks the consent checkbox nearest the inputs. The final click on the login button is governed by an "Auto-submit login" setting that ships switched off, so the extension never submits a form you weren't ready to submit; if you don't want it on permanently, every row in the side panel has its own "fill and login" button. For two-step logins (GitHub-style "password first, code next"), a live TOTP capsule appears on the page and the current code is filled into the next step automatically. No phone needed.
 
@@ -46,7 +46,7 @@ TOTP codes (RFC 6238) are generated locally, shown live with a countdown. Adding
 
 ### Offline Security Health Check
 
-One click audits your whole vault and produces a 0–100 score built from four weighted dimensions: reuse (weight 35), weak passwords (25), suspected exposure (20), and stale passwords (20), computed as `100 - 35×reuseRatio - 25×weakRatio - 20×exposureRatio - 20×staleRatio`. Missing 2FA is counted and listed as its own risk item but contributes no points. Weak-password and exposure checks run against local dictionaries — a built-in common-password list plus a bundled offline Top-1000 file (`top1000.json`) — with no HIBP-style online lookup. The health checker itself must never become a data egress point.
+One click audits your whole vault and produces a 0–100 score built from four weighted dimensions: reuse (weight 35), weak passwords (25), suspected exposure (20), and stale passwords (20), computed as `100 - 35×reuseRatio - 25×weakRatio - 20×exposureRatio - 20×staleRatio`. Missing 2FA is counted and listed as its own risk item but contributes no points. Weak-password and exposure checks run against local dictionaries — a built-in common-password list plus a bundled offline list of nearly a thousand commonly leaked passwords (`top1000.json`, 999 entries) — with no HIBP-style online lookup. The health checker itself must never become a data egress point.
 
 ### Migration and Backup
 
@@ -54,7 +54,7 @@ Import auto-detects export formats from Chrome, LastPass, Bitwarden, and 1Passwo
 
 ### Experience Layer
 
-Six color themes, instant Chinese/English switching (extension pages and injected UI switch together), site favicons read from Chrome's local icon cache (zero external requests), and a dual-mode password generator (random characters, or passphrases drawn from a Diceware-style list of 3080 words — 4 words by default, roughly 46 bits of entropy).
+Six color themes, instant Chinese/English switching (extension pages and injected UI switch together), site favicons read from Chrome's local icon cache (zero external requests), and a dual-mode password generator (random characters, or passphrases drawn from a bundled 3080-word English list — 4 words by default, roughly 46 bits of entropy). Login pages also get a draggable floating fill button that snaps to the screen edge with adjustable opacity, and the toolbar popup gathers the management page, side panel, direct fill and session lock onto one screen.
 
 Then there is a layer of small everyday details: the "+" in the side panel header adds an account for the current site in place, with the URL prefilled from the domain; one icon beside the search box switches between "This site" and "All entries", and in all-entries mode an off-site account opens in a new tab instead of being pushed into the current page's form; each row's "View details" shows the full remark and the password change history in a read-only drawer, so a quick look no longer means entering edit mode; master password fields detect Caps Lock live, so a case typo stops masquerading as a "wrong password"; and the auto-save prompt flags weak or reused passwords inline — a heads-up that never blocks saving.
 
@@ -66,7 +66,7 @@ A password manager earns trust through verifiable design, not slogans. The hard 
 2. **Field-level encryption.** Username, password, URL, notes, and TOTP secret are each encrypted individually. The storage layer sees only ciphertext.
 3. **Standard algorithms, no invention.** PBKDF2-SHA256 (600,000 iterations) for key derivation, AES-256-GCM authenticated encryption, all via the browser-native Web Crypto API. A follow-up post covers the implementation in depth.
 4. **Sessions have lifecycles.** 24 hours by default (1 hour to 7 days configurable). Idle auto-lock tied to system screen lock, and relock on browser restart, are both opt-in and off by default; one-click manual lock is always available. On any lock path, in-memory key handles and decrypted snapshots are wiped.
-5. **Fully open source (GPL-3.0).** Every line of the crypto, every permission in the manifest, every network call — you can read them all yourself. 632 automated tests cover the crypto, session, storage, and message-routing paths (they run locally and in the pre-commit hook; the repository CI currently builds).
+5. **Fully open source (GPL-3.0).** Every line of the crypto, every permission in the manifest, every network call — you can read them all yourself. 642 automated tests cover the crypto, session, storage, and message-routing paths (they run locally and in the pre-commit hook; the repository CI currently builds).
 
 An honest disclaimer too: **this tool is positioned for development, testing, and everyday logins. I don't recommend storing banking or payment credentials in any browser extension.** And the master password cannot be recovered if forgotten — use the encrypted backup feature. Stating boundaries plainly is what security products should do.
 
@@ -81,7 +81,7 @@ An honest disclaimer too: **this tool is positioned for development, testing, an
 
 ## Closing
 
-The project has grown from v1.0 in May 2026 to v3.8 now, every version pulled out of real daily use. It doesn't try to be "yet another Bitwarden." It aims to make one scenario — multi-environment developer logins — frictionlessly good, while welding the privacy floor into the architecture.
+The project has grown from v1.0 in May 2026 to v3.9 now, every version pulled out of real daily use. It doesn't try to be "yet another Bitwarden." It aims to make one scenario — multi-environment developer logins — frictionlessly good, while welding the privacy floor into the architecture.
 
 If you're tired of mixed-up test accounts and phone-authenticator juggling, give it a try:
 

@@ -19,7 +19,7 @@ A **free, open-source** local Chrome password manager: **one-click login** that 
 
 > **Security notice**: All data stays in your browser; sensitive fields are encrypted individually with AES-256-GCM and password data never travels over the network. The extension's only outbound behaviour is an anonymous version check every 6 hours (it reads Chrome Web Store reachability and the GitHub Releases version number, carrying no account data) — see [Permissions & Data Flow](#-permissions--data-flow). For the safety of your assets, we recommend not storing highly sensitive credentials (banking, payment, etc.) in any browser extension.
 >
-> 🌐 **Live demo**: https://liaolongdong.github.io/account-password-helper/en.html ｜ 📊 **Technical highlights**: PBKDF2 600K iterations · AES-256-GCM authenticated encryption · Instant side panel in every state (20–50ms to data on the cached warm path) · 6 themes · Bilingual UI · Core features work fully offline · 640 automated tests
+> 🌐 **Live demo**: https://liaolongdong.github.io/account-password-helper/en.html ｜ 📊 **Technical highlights**: PBKDF2 600K iterations · AES-256-GCM authenticated encryption · Instant side panel in every state (20–50ms to data on the cached warm path) · 6 themes · Bilingual UI · Core features work fully offline · 642 automated tests
 
 **Contents**: [Core Advantages](#-core-advantages) · [Feature Tour](#-feature-tour) · [How It Compares](#how-it-compares) · [Core Features](#core-features) · [Permissions & Data Flow](#-permissions--data-flow) · [Quick Start](#quick-start) · [FAQ](#faq) · [Contributing](#contributing) · [License](#license)
 

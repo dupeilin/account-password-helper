@@ -1,6 +1,6 @@
 # 商店截图流水线（store-shots）
 
-用脚本生成 Chrome 应用商店的产品截图，**中英各一套、每套 9 张**，输出到
+用脚本生成 Chrome 应用商店的产品截图，**中英各一套、每套 14 张**，输出到
 `assets/cws-store/screen-*.png`（2560×1600 = 1280×800 @2x）。
 
 Dashboard 里中文页与 English (United States) 页的截图槽位**互相独立、不会继承**，
@@ -81,32 +81,49 @@ node scripts/store-shots/capture.mjs "$PWD/.output/chrome-mv3" firstrun  en
 > 共用一份）；`SHOT_PORT` 只改 `demo-server.mjs` 的监听端口，改了要同步改
 > `--host-resolver-rules`。
 
-## 九张图的卖点与标题带文案
+**只重截一张**用 `autosave` 模式（需先按同一语言 `seed`，不必重跑整批）：保存弹窗的版式
+最容易随文案或界面语言微调而需要重拍，为此重跑三批不值得。
+
+```bash
+node scripts/store-shots/capture.mjs "$PWD/.output/chrome-mv3" autosave en
+```
+
+## 十四张图的卖点与标题带文案
 
 标题带文案的合规约束与商店四个字段完全一致：**零竞品品牌名、零绝对化表述**
 （不得写「零联网 / 100% offline / 数据不出浏览器」——扩展每 6 小时有一次
 不携带用户数据的匿名版本检查）。改文案后重跑 `capture.mjs` 即可，文案表在
 `capture.mjs` 的 `COPY` 常量里（中英各一份）。
 
-| 文件（英文加 `-en`）            | 卖点          | 标题带（中文）                                           |
-| ------------------------------- | ------------- | -------------------------------------------------------- |
-| `screen-1-one-click-login.png`  | 一键登录      | 一键登录：填充 → 勾选「记住我」→ 自动点击登录            |
-| `screen-2-totp.png`             | TOTP 两步验证 | TOTP 两步验证：验证码和密码住在一起，不用摸手机          |
-| `screen-3-multi-env.png`        | 多环境账号    | 多环境账号管理：同一站点，开发 / 测试 / 生产分得清清楚楚 |
-| `screen-4-security-audit.png`   | 离线安全体检  | 离线安全体检：0-100 分给密码健康打分，全程本机计算       |
-| `screen-5-preferences.png`      | 主题与双语    | 6 款主题 + 中英文双语界面，即时切换无需刷新              |
-| `screen-6-local-encryption.png` | 本地加密      | 本地加密：密码只存在你的浏览器里，加密后落盘             |
-| `screen-7-favorites.png`        | 收藏置顶      | 收藏常用账号：星标置顶，再一键只看收藏                   |
-| `screen-8-detail-drawer.png`    | 条目详情      | 条目详情：备注、两步验证活码、修改历史一屏看全           |
-| `screen-9-inline-fill.png`      | 页内填充面板  | 页内填充面板：在输入框旁边直接挑账号                     |
+| 文件（英文加 `-en`）            | 卖点           | 标题带（中文）                                           |
+| ------------------------------- | -------------- | -------------------------------------------------------- |
+| `screen-1-one-click-login.png`  | 一键登录       | 一键登录：填充 → 勾选「记住我」→ 自动点击登录            |
+| `screen-2-totp.png`             | TOTP 两步验证  | TOTP 两步验证：验证码和密码住在一起，不用摸手机          |
+| `screen-3-multi-env.png`        | 多环境账号     | 多环境账号管理：同一站点，开发 / 测试 / 生产分得清清楚楚 |
+| `screen-4-security-audit.png`   | 离线安全体检   | 离线安全体检：0-100 分给密码健康打分，全程本机计算       |
+| `screen-5-preferences.png`      | 主题与双语     | 6 款主题 + 中英文双语界面，即时切换无需刷新              |
+| `screen-6-local-encryption.png` | 本地加密       | 本地加密：密码只存在你的浏览器里，加密后落盘             |
+| `screen-7-favorites.png`        | 收藏置顶       | 收藏常用账号：星标置顶，再一键只看收藏                   |
+| `screen-8-detail-drawer.png`    | 条目详情       | 条目详情：备注、两步验证活码、修改历史一屏看全           |
+| `screen-9-inline-fill.png`      | 页内填充面板   | 页内填充面板：在输入框旁边直接挑账号                     |
+| `screen-10-floating-button.png` | 页面悬浮按钮   | 页面悬浮按钮：登录页随手唤起填充面板                     |
+| `screen-11-auto-save.png`       | 自动保存凭证   | 自动保存登录凭证：提交时弹窗确认，自动去重               |
+| `screen-12-import-backup.png`   | 导入导出与备份 | 导入导出与加密备份：数据随时能带走                       |
+| `screen-13-generator.png`       | 密码生成器     | 密码生成器双模式：随机字符或助记词组                     |
+| `screen-14-trash.png`           | 回收站         | 回收站与修改历史：误删可恢复，改错能回滚                 |
 
-> 商店每个语言页的截图上限是 **5 张**，这里是 9 张候选，**最终选哪 5 张由上传时定**。
+> **`screen-12` 刻意只拍「数据管理」下拉，不拍导入弹窗**：导入弹窗的格式单选里有
+> 「Chrome 密码」这一项，属商店图片文字禁用的竞品品牌名；下拉里的九个入口
+> （导入 / 下载模板 / 导出 / 导出 JSON / 加密备份导出 / 加密备份导入 / 备份到邮箱 /
+> 一键去重 / 回收站）不含品牌名，且一屏就能覆盖导出与备份两个能力。
+
+> 商店每个语言页的截图上限是 **5 张**，这里是 14 张候选，**最终选哪 5 张由上传时定**。
 > 脚本这边的建议是 `screen-1 / 2 / 3 / 4 / 9`：前四张各占一个独立卖点（一键登录、
-> 两步验证、多环境、安全体检），`screen-9` 是唯一一张展示**页内**体验的，和其余
-> 「侧边栏 / 管理页」构图互补，辨识度最高。
-> 需要换掉某张时，`screen-7`（收藏 + 标签 + 网站图标）和 `screen-8`（详情抽屉，
-> 信息密度最高）是首选替补；`screen-6`（本地加密）画面最朴素、且该主张在摘要与
-> 说明里已有文字承载，最先可舍弃。
+> 两步验证、多环境、安全体检），`screen-9` 与 `screen-10` 是仅有的两张展示**页内**
+> 体验的，和其余「侧边栏 / 管理页」构图互补，辨识度最高。
+> 需要换掉某张时，`screen-7`（收藏 + 标签 + 网站图标）、`screen-8`（详情抽屉，信息密度
+> 最高）与 `screen-13`（生成器面板）是首选替补；`screen-6`（本地加密）画面最朴素、
+> 且该主张在摘要与说明里已有文字承载，最先可舍弃。
 
 ## 文件
 
@@ -129,7 +146,7 @@ node scripts/store-shots/capture.mjs "$PWD/.output/chrome-mv3" firstrun  en
 （图 2 与图 8 的活码来源），`dev@example.com` 用常见泄露密码、design/wiki 两条共用同一密码
 （让图 4 的安全体检有发现项）。
 
-除导入外 `seed.mjs` 还会做两件事，都是为了让特定小节渲染出来：
+除导入外 `seed.mjs` 还会做三件事，都是为了让特定小节渲染出来：
 
 - **收藏**（默认 `qa-bot@example.com`、`designer@example.com`，`SHOT_FAVORITE_USERS` 覆盖）：
   图 7 的星标置顶与「只看收藏」筛选。刻意避开带 TOTP 的 `ops`——它的卡片多两个操作图标，
@@ -137,7 +154,14 @@ node scripts/store-shots/capture.mjs "$PWD/.output/chrome-mv3" firstrun  en
 - **改密码**（默认 `ops@example.com`，`SHOT_HISTORY_USERS` 覆盖，连改两次留两条历史）：
   图 8 抽屉里的「密码修改历史」小节是 `v-if="historyList.length > 0"`，
   只导入不改密的话整节不渲染。
+- **移入回收站**（默认 `intern@example.com`，`SHOT_TRASH_USERS` 覆盖）：
+  图 14 的回收站要有内容才拍得出「30 天内可恢复」。刻意选不在其它画面重点位置的
+  文档类条目，删掉不会让多环境 / TOTP / 体检那几张少掉关键行。
 
-改演示数据直接改那两个常量；想用**真实导出样本**拍图，把 CSV 路径作为第三个参数传入
+改演示数据直接改那几个常量；想用**真实导出样本**拍图，把 CSV 路径作为第三个参数传入
 （`node seed.mjs <extDir> zh /path/to/demo.csv`），此时务必同步传
-`SHOT_FAVORITE_USERS` / `SHOT_HISTORY_USERS`，并确认样本已脱敏——这些内容会进商店素材。
+`SHOT_FAVORITE_USERS` / `SHOT_HISTORY_USERS` / `SHOT_TRASH_USERS`，并确认样本已脱敏——这些内容会进商店素材。
+
+> ⚠️ 演示页的 CSS 选择器一律收在 `.card` 作用域内（`h1` / `label` / `input` / `button` 等
+> 元素选择器不要裸写）。注入到页面上的保存提示框、悬浮按钮**不在 Shadow DOM 内**，
+> 宿主的裸 `button { width: 100% }` 会把提示框按钮挤到换行——这是实测踩过的坑。
