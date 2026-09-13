@@ -1,5 +1,17 @@
 # Changelog
 
+## [3.10.0](https://github.com/liaolongdong/account-password-helper/compare/v3.9.0...v3.10.0) (2026-09-13)
+
+
+### Features
+
+* **store-shots:** 更新 README 首屏登录示范动图和截图素材 ([289b3d2](https://github.com/liaolongdong/account-password-helper/commit/289b3d2d586978de8cbe4da473a6a5d77d4be455))
+
+
+### Bug Fixes
+
+* **content:** 修复自动保存弹窗英文标签断词，并重制官网与商店截图素材 ([dbb7822](https://github.com/liaolongdong/account-password-helper/commit/dbb7822bb5c245bf13d6b6cdbd584a8a65f40fa4))
+
 ## [3.9.0](https://github.com/liaolongdong/account-password-helper/compare/v3.8.0...v3.9.0) (2026-09-11)
 
 
