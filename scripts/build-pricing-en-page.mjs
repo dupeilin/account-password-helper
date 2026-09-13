@@ -13,6 +13,7 @@ import { applyI18n, assertI18nCoverage } from './lib/apply-i18n.mjs';
 const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const srcPath = path.join(root, 'pricing.html');
 const outPath = path.join(root, 'pricing.en.html');
+// codeql[js/incomplete-hostname-regexp] -- SITE 仅作为字面量拼接进生成的 canonical 属性值，从不作为正则去匹配主机名，此处无需转义点号或尾部锚定
 const SITE = 'https://liaolongdong.github.io/account-password-helper';
 
 let html = readFileSync(srcPath, 'utf8');
@@ -50,6 +51,17 @@ replaceOnce(
   `property="og:description"\n      content="${EN_DESCRIPTION}"`,
 );
 replaceOnce(/rel="canonical"\s+href="[^"]*"/, `rel="canonical"\n      href="${SITE}/pricing.en.html"`);
+replaceOnce(/property="og:url"\s+content="[^"]*"/, `property="og:url"\n      content="${SITE}/pricing.en.html"`);
+replaceOnce(/property="og:locale"\s+content="zh_CN"/, 'property="og:locale"\n      content="en_US"');
+replaceOnce(
+  /property="og:locale:alternate"\s+content="en_US"/,
+  'property="og:locale:alternate"\n      content="zh_CN"',
+);
+replaceOnce(/name="twitter:title"\s+content="[^"]*"/, `name="twitter:title"\n      content="${EN_TITLE}"`);
+replaceOnce(
+  /name="twitter:description"\s+content="[^"]*"/,
+  `name="twitter:description"\n      content="${EN_DESCRIPTION}"`,
+);
 
 // 页内跳转改为英文兄弟页面，避免英文页链向中文页
 const replaceEvery = (from, to) => {

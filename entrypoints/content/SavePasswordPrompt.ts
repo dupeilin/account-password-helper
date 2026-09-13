@@ -16,6 +16,17 @@ import type { SaveRiskHint } from '@/utils/types';
 const PROMPT_CLASS = 'aph-save-password-prompt';
 
 /**
+ * 弹窗字体栈
+ *
+ * 量具（measureLabelWidth）与弹窗本身共用同一份，保证量出来的标签宽度
+ * 与实际渲染一致——两者一旦分叉，量的宽度就会偏小、标签又会换行。
+ */
+const PROMPT_FONT = "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+
+/** 标签列最小宽度（中文两字「账号」一行放下所需的宽度） */
+const LABEL_MIN_WIDTH = 40;
+
+/**
  * 主色（主题令牌 + 晴空蓝回退）
  *
  * 本弹窗直接挂到页面 body（非 Shadow DOM），无法继承扩展页 :root 上的令牌，
@@ -85,7 +96,7 @@ export function showSavePasswordPrompt(
     background: #fff;
     border-radius: 8px;
     box-shadow: 0 4px 24px rgba(0, 0, 0, 0.15), 0 1px 4px rgba(0, 0, 0, 0.08);
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-family: ${PROMPT_FONT};
     overflow: hidden;
     animation: aphSlideIn 0.25s ease-out;
   `;
@@ -142,8 +153,26 @@ export function showSavePasswordPrompt(
   const body = document.createElement('div');
   body.style.cssText = 'padding: 12px 16px;';
 
-  const { row: userRow, valueEl: usernameValueEl } = createInfoRow(tl('cs.save.username'), data.username, false);
-  const { row: passRow, valueEl: passwordValueEl } = createInfoRow(tl('cs.save.password'), data.password, true);
+  // 四行标签共用同一个列宽：按当前语言里最长的那个标签量，避免英文单词被断词换行
+  const labelWidth = measureLabelWidth([
+    tl('cs.save.username'),
+    tl('cs.save.password'),
+    tl('cs.save.tag'),
+    tl('cs.save.remark'),
+  ]);
+
+  const { row: userRow, valueEl: usernameValueEl } = createInfoRow(
+    tl('cs.save.username'),
+    data.username,
+    false,
+    labelWidth,
+  );
+  const { row: passRow, valueEl: passwordValueEl } = createInfoRow(
+    tl('cs.save.password'),
+    data.password,
+    true,
+    labelWidth,
+  );
   body.appendChild(userRow);
   body.appendChild(passRow);
 
@@ -162,6 +191,7 @@ export function showSavePasswordPrompt(
     data.tag,
     tl('cs.save.tagPlaceholder'),
     false,
+    labelWidth,
   );
   body.appendChild(tagRow);
 
@@ -171,6 +201,7 @@ export function showSavePasswordPrompt(
     data.remark,
     tl('cs.save.remarkPlaceholder'),
     true,
+    labelWidth,
   );
   body.appendChild(remarkRow);
 
@@ -444,13 +475,61 @@ function createRiskLine(text: string): HTMLElement {
 }
 
 /**
+ * 量出标签列的统一宽度。
+ *
+ * 标签列原本写死 40px（中文两字「账号」「密码」刚好放下），但英文单词
+ * （`Username` / `Password`，13px 下约 60px）在 40px 里放不下会断词换行
+ *（实测英文环境下渲染成 `Usern` + `ame`）。这里用一个隐藏量具量出最长标签的
+ * 真实宽度，四行共用同一个值：既不断词、又保持左侧标签列对齐。
+ * 中文标签量出来不足 {@link LABEL_MIN_WIDTH}，仍取下限，既有版式不变。
+ *
+ * 量具挂到 `document.body` 而不是弹窗上：弹窗此刻还没入文档，脱离文档的元素
+ * `offsetWidth` 恒为 0；同时显式指定字体，避免继承宿主页面的字号。
+ *
+ * @param labels 需要参与比较的全部标签文本
+ * @returns 标签列宽度（px）
+ */
+function measureLabelWidth(labels: string[]): number {
+  const ruler = document.createElement('span');
+  ruler.setAttribute('aria-hidden', 'true');
+  ruler.style.cssText = `
+    position: absolute;
+    visibility: hidden;
+    left: -9999px;
+    top: 0;
+    white-space: nowrap;
+    font-size: 13px;
+    font-family: ${PROMPT_FONT};
+  `;
+  document.body.appendChild(ruler);
+  let widest = 0;
+  for (const label of labels) {
+    ruler.textContent = label;
+    widest = Math.max(widest, ruler.offsetWidth);
+  }
+  ruler.remove();
+  return Math.max(LABEL_MIN_WIDTH, Math.ceil(widest) + 2);
+}
+
+/** 生成标签元素样式（固定列宽 + 不换行，见 measureLabelWidth）。 */
+function labelStyle(labelWidth: number): string {
+  return `color: #999; width: ${labelWidth}px; flex-shrink: 0; white-space: nowrap;`;
+}
+
+/**
  * 创建信息行（账号/密码）
  * @param label 标签文本
  * @param value 值
  * @param isPassword 是否为密码字段（密码用圆点遮挡）
+ * @param labelWidth 标签列宽度（由 measureLabelWidth 统一量出）
  * @returns row 容器元素和 valueEl 值元素引用
  */
-function createInfoRow(label: string, value: string, isPassword: boolean): { row: HTMLElement; valueEl: HTMLElement } {
+function createInfoRow(
+  label: string,
+  value: string,
+  isPassword: boolean,
+  labelWidth: number,
+): { row: HTMLElement; valueEl: HTMLElement } {
   const row = document.createElement('div');
   row.style.cssText = `
     display: flex;
@@ -462,7 +541,7 @@ function createInfoRow(label: string, value: string, isPassword: boolean): { row
 
   const labelEl = document.createElement('span');
   labelEl.textContent = label;
-  labelEl.style.cssText = 'color: #999; width: 40px; flex-shrink: 0;';
+  labelEl.style.cssText = labelStyle(labelWidth);
 
   const valueEl = document.createElement('span');
   valueEl.textContent = isPassword ? '•'.repeat(Math.min(value.length, 12)) : value;
@@ -485,6 +564,7 @@ function createInfoRow(label: string, value: string, isPassword: boolean): { row
  * @param defaultValue 默认值
  * @param placeholder 占位提示文本
  * @param isTextarea 是否使用 textarea（用于备注多行输入）
+ * @param labelWidth 标签列宽度（由 measureLabelWidth 统一量出）
  * @returns row 容器元素和 input 输入框元素
  */
 function createEditableRow(
@@ -492,6 +572,7 @@ function createEditableRow(
   defaultValue: string,
   placeholder: string,
   isTextarea: boolean,
+  labelWidth: number,
 ): { row: HTMLElement; input: HTMLInputElement | HTMLTextAreaElement } {
   const row = document.createElement('div');
   row.style.cssText = `
@@ -504,7 +585,7 @@ function createEditableRow(
 
   const labelEl = document.createElement('span');
   labelEl.textContent = label;
-  labelEl.style.cssText = 'color: #999; width: 40px; flex-shrink: 0; padding-top: 5px;';
+  labelEl.style.cssText = `${labelStyle(labelWidth)} padding-top: 5px;`;
 
   const inputStyle = `
     flex: 1;

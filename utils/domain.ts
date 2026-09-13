@@ -149,8 +149,8 @@ export function getMainDomain(hostname: string): string {
 /**
  * 判断是否为本地开发环境域名
  *
- * 针对 localhost 和 127.0.0.1 域名，默认匹配所有账号密码，
- * 方便开发人员在不同本地项目间快速填充密码。
+ * 命中该判定的域名改走 {@link matchesPortForLocalDev} 的端口过滤（而非精确 host 匹配），
+ * 方便开发人员在多个本地项目间快速填充密码，同时避免不同端口的本地账号互相混淆。
  *
  * @param domain - 当前页面域名（hostname）
  * @returns 是否为本地开发域名

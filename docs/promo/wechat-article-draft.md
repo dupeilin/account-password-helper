@@ -1,7 +1,8 @@
 # 【微信公众号 · 待发布草稿】
 
 > ⚠️ 这是**待发稿件，尚未自动发布**。请审阅后用微信编辑器或 `/baoyu-post-to-wechat` 手动发布。
-> 建议用 `/baoyu-article-illustrator` 为标注 🖼 的位置生成/复用配图；现有截图位于 `assets/screenshots/`。
+> 建议用 `/baoyu-article-illustrator` 为标注 🖼 的位置生成/复用配图；配图优先取 `assets/cws-store/screen-*-*.png`（`scripts/store-shots/` 生成的占位演示截图，数据全为 `example.com`）。
+> ⚠️ `assets/screenshots/` 含真实账号、邮箱与 TOTP 活码，**已退役，任何场合都不要再引用**；配图一律用 `assets/cws-store/screen-*.png`（`scripts/store-shots/` 生成的占位演示截图）或 `docs/demo-login.gif`（2026-09-13 从占位演示页重录的动图，数据全为 `example.com`，可安全引用）。
 
 ---
 
@@ -36,7 +37,7 @@
 **1. 一键登录，不只是填充**
 侧边栏点「填充并登录」：自动填账号密码 → 自动勾选“同意条款” → 自动点击登录按钮，1 秒完成。在偏好设置里开启「自动触发登录」后，按 `Ctrl+Shift+F` 也能一步到位；默认状态下这个快捷键有意只填充、不提交，防止误触登进意料之外的页面。别的工具只填表，登录按钮还得你自己点。
 
-🖼 配图建议：`assets/screenshots/06-sidepanel-fill.png` 或一键登录 GIF（`docs/demo-login.gif`）
+🖼 配图建议：`docs/demo-login.gif`（动图，2026-09-13 从占位演示页重录，900px 宽一轮约 7 秒）或静态图 `assets/cws-store/screen-1-one-click-login.png`
 
 **2. 精确域名多环境隔离**
 dev / test / staging / prod 的账号按域名精确匹配，同一站点不同环境互不混淆——这条对开发者几乎是决定性功能。
@@ -44,12 +45,12 @@ dev / test / staging / prod 的账号按域名精确匹配，同一站点不同�
 **3. 内置 TOTP 两步验证**
 验证码和密码住在一起，按 RFC 6238 本地生成。GitHub 式两步登录时，活码胶囊自动锚定在输入框旁，一键填入，不用再掏手机。
 
-🖼 配图建议：`assets/screenshots/09-totp-code.png`
+🖼 配图建议：`assets/cws-store/screen-2-totp.png`
 
 **4. 离线安全体检**
 一键给出 0–100 评分，四个维度加权：密码复用 35 / 弱密码 25 / 命中常见泄露密码字典 20 / 长期未更新 20（未开两步验证单独列出但不扣分），**这一项全程本地计算，不发起任何网络请求**。
 
-🖼 配图建议：`assets/screenshots/10-health-check.png`
+🖼 配图建议：`assets/cws-store/screen-4-security-audit.png`
 
 **5. 纯本地加密，密码不上传**
 主密码经 **PBKDF2（600,000 次迭代）** 派生密钥，敏感字段用 **AES-256-GCM** 逐字段认证加密，密文全部存在浏览器本地，密码数据不出机器、不上传任何服务器。扩展唯一的联网动作是每 6 小时一次的匿名版本检查（探测商店可达性，不可达才查 GitHub Releases 版本号），不携带任何账号数据。
@@ -64,7 +65,7 @@ dev / test / staging / prod 的账号按域名精确匹配，同一站点不同�
 
 支持 CSV / JSON 导入，自动识别 **Chrome、LastPass、Bitwarden、1Password** 导出格式，列名自动映射；导出同样方便，数据随时能带走，绝不锁定。
 
-🖼 配图建议：`assets/screenshots/03-excel-import.png`
+🖼 配图建议：`assets/cws-store/screen-12-import-backup.png`
 
 ### 还想再多嘴一句安全
 

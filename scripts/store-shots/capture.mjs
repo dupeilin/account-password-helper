@@ -1,13 +1,15 @@
 /**
  * 截取并合成商店截图（中英各一套）。
  *
- *   node capture.mjs <extDir> seeded  [zh|en]   # 一键登录 / TOTP / 多环境 / 安全体检
+ *   node capture.mjs <extDir> seeded  [zh|en]   # 一键登录 / TOTP / 多环境 / 安全体检 / 收藏 / 详情 / 页内面板 / 悬浮按钮 / 自动保存 / 数据管理 / 生成器 / 回收站
  *   node capture.mjs <extDir> prefs   [zh|en]   # 偏好设置（主题 / 双语切换）
  *   node capture.mjs <extDir> firstrun [zh|en]  # 本地加密（首启设置主密码页）
+ *   node capture.mjs <extDir> autosave [zh|en]  # 只重截自动保存弹窗（弹窗版式微调后无需重跑整批）
  *
- * 前置：Chrome 带 --remote-debugging-port=9333 启动、扩展已加载、演示页静态服务在跑，
- * 且已按对应语言 seed（英文页需要英文占位标签，必须换全新 profile 重新 seed）。
- * 详见同目录 README.md。输出写入 <repo>/assets/cws-store/，英文版文件名带 -en 后缀。
+ * 前置：Chrome 带 --remote-debugging-port=9333 启动、扩展已加载、demo-server.mjs
+ * 在跑（本地 HTTPS 演示站），且已按对应语言 seed（英文页需要英文占位标签，必须换
+ * 全新 profile 重新 seed）。详见同目录 README.md。输出写入 <repo>/assets/cws-store/，
+ * 英文版文件名带 -en 后缀。
  *
  * Dashboard 上中文页与 English (United States) 页的截图槽位互相独立，两套都要上传。
  * 标题带文案与商店四个字段同口径：零竞品品牌名、零绝对化表述。
@@ -18,7 +20,10 @@ import {
   BODY,
   LEFT_W,
   PANEL_W,
+  W,
   attachTo,
+  closeStaleDemoTabs,
+  closeTab,
   compose,
   evalIn,
   extUrl,
@@ -26,25 +31,23 @@ import {
   initExtension,
   metrics,
   newTab,
+  openPanelScopedTo,
+  warmFavicons,
 } from './shot.mjs';
+import { COPY, UI } from './copy.mjs';
+import { DEMO_HOSTS, HOST_ADMIN, HOST_CONSOLE, pageUrl } from './demo-hosts.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const OUT_DIR = resolve(HERE, '../../assets/cws-store');
 
-/**
- * 演示页必须用**域名**访问，不能用 127.0.0.1：扩展条目按精确域名匹配，
- * 只有 host 是 admin.example.com / console.example.com 时侧边栏才会命中对应账号
- * （这也是 Chrome 启动参数里 --host-resolver-rules 把这些域名指到本地的原因）。
- */
-const PORT = process.env.SHOT_PORT || '8777';
-const HOST_ADMIN = process.env.SHOT_HOST_ADMIN || 'admin.example.com';
-const HOST_CONSOLE = process.env.SHOT_HOST_CONSOLE || 'console.example.com';
-const pageUrl = (host, page) => `http://${host}:${PORT}/${page}`;
+// 演示页地址与域名清单见 `demo-hosts.mjs`：必须用**域名**访问而不是 127.0.0.1
+// （扩展条目按精确域名匹配），且必须是 `https://<host>` 这种不带端口的形态，
+// favicon 缓存才会与条目网址对得上。
 
 const EXT_DIR = process.argv[2];
 const MODE = process.argv[3];
-if (!EXT_DIR || !['seeded', 'prefs', 'firstrun'].includes(MODE)) {
-  console.error('usage: node capture.mjs <path-to-.output/chrome-mv3> <seeded|prefs|firstrun> [zh|en]');
+if (!EXT_DIR || !['seeded', 'prefs', 'firstrun', 'autosave'].includes(MODE)) {
+  console.error('usage: node capture.mjs <path-to-.output/chrome-mv3> <seeded|prefs|firstrun|autosave> [zh|en]');
   process.exit(1);
 }
 
@@ -54,70 +57,6 @@ if (!['zh', 'en'].includes(LANG)) {
   process.exit(1);
 }
 
-/** 标题带文案（中英各一份）。 */
-const COPY = {
-  zh: {
-    suffix: '',
-    login: {
-      title: '一键登录：填充 → 勾选「记住我」→ 自动点击登录',
-      sub: '侧边栏「填充并登录」，或在偏好设置中开启「自动触发登录」',
-    },
-    totp: {
-      title: 'TOTP 两步验证：验证码和密码住在一起，不用摸手机',
-      sub: '扫码或上传图片即可添加密钥，动态码在本机按 RFC 6238 生成',
-    },
-    audit: {
-      title: '离线安全体检：0-100 分给密码健康打分，全程本机计算',
-      sub: '复用 / 弱密码 / 常见泄露 / 长期未更新四维加权，不联网',
-    },
-    env: {
-      title: '多环境账号管理：同一站点，开发 / 测试 / 生产分得清清楚楚',
-      sub: '条目按精确域名匹配，各环境凭据互不混淆',
-    },
-    prefs: {
-      title: '6 款主题 + 中英文双语界面，即时切换无需刷新',
-      sub: '扩展页与注入页面的浮层同步生效，快捷键均可在浏览器页自定义',
-    },
-    encryption: {
-      title: '本地加密：密码只存在你的浏览器里，加密后落盘',
-      sub: 'PBKDF2 600,000 次迭代 + AES-256-GCM，密码数据不上传服务器',
-    },
-  },
-  en: {
-    suffix: '-en',
-    login: {
-      title: 'One-click login: fill, tick consent, click Sign in',
-      sub: 'Use Fill and sign in in the side panel, or enable auto-submit in preferences',
-    },
-    totp: {
-      title: 'TOTP two-factor: codes live right next to the passwords',
-      sub: 'Add a key by scanning a QR code or uploading an image; codes are generated on your device per RFC 6238',
-    },
-    audit: {
-      title: 'Offline security audit: a 0-100 score for password health',
-      sub: 'Weighted across reuse, weakness, common leaks and staleness; all computed on your device',
-    },
-    env: {
-      title: 'Multi-environment accounts: dev, test and prod kept apart',
-      sub: 'Entries match the exact host name, so credentials never mix between environments',
-    },
-    prefs: {
-      title: '6 color themes plus an English/Chinese UI, switched instantly',
-      sub: 'Applies to extension pages and injected overlays; every shortcut is customizable',
-    },
-    encryption: {
-      title: 'Encrypted locally: passwords stay in your browser, encrypted at rest',
-      sub: 'PBKDF2 with 600,000 iterations plus AES-256-GCM; password data is never uploaded',
-    },
-  },
-};
-
-/** 管理页上的入口文案（按界面语言不同）。 */
-const UI = {
-  zh: { audit: '安全体检', prefs: '偏好设置' },
-  en: { audit: 'Health Check', prefs: 'Preferences' },
-};
-
 const C = COPY[LANG];
 const out = name => resolve(OUT_DIR, name.replace(/\.png$/, `${C.suffix}.png`));
 
@@ -126,6 +65,33 @@ const RW = 1440;
 const RH = Math.round(BODY / (1280 / RW));
 
 const wait = ms => new Promise(r => setTimeout(r, ms));
+
+/** 演示主密码：seed.mjs 用它设置主密码，这里用它解锁 / 通过敏感入口的二次验证。 */
+const DEMO_MASTER_PASSWORD = 'Demo!Pass2026';
+
+/**
+ * 在「验证主密码」弹窗里填入主密码并确认。
+ *
+ * 回收站等敏感入口会先要求二次验证，只点开菜单项只会停在验证框上（实测截图拍到的
+ * 就是验证框而不是回收站内容）。
+ */
+const confirmMasterPassword = `(() => {
+  const isVisible = (n) => !!(n.offsetWidth || n.offsetHeight || n.getClientRects().length);
+  const dialog = [...document.querySelectorAll('.el-dialog')].filter(isVisible).pop();
+  if (!dialog) return 'no visible dialog';
+  const el = [...dialog.querySelectorAll('input[type=password]')].find(isVisible);
+  if (!el) return 'password input not found';
+  const d = Object.getOwnPropertyDescriptor(Object.getPrototypeOf(el), 'value');
+  d.set.call(el, ${JSON.stringify(DEMO_MASTER_PASSWORD)});
+  el.dispatchEvent(new Event('input', { bubbles: true }));
+  el.dispatchEvent(new Event('change', { bubbles: true }));
+  const btn = [...dialog.querySelectorAll('button')]
+    .filter(isVisible)
+    .find((b) => b.classList.contains('el-button--primary'));
+  if (!btn) return 'confirm button not found';
+  btn.click();
+  return 'master password submitted';
+})()`;
 
 /**
  * 把扩展界面语言切到目标语言。
@@ -165,7 +131,7 @@ async function unlockIfNeeded(s) {
     `(() => {
       const el = document.querySelector('input[type=password]');
       const d = Object.getOwnPropertyDescriptor(Object.getPrototypeOf(el), 'value');
-      d.set.call(el, 'Demo!Pass2026');
+      d.set.call(el, DEMO_MASTER_PASSWORD);
       el.dispatchEvent(new Event('input', { bubbles: true }));
       el.dispatchEvent(new Event('change', { bubbles: true }));
       const b = [...document.querySelectorAll('button')].find((x) =>
@@ -223,30 +189,68 @@ async function clickByLabel(s, label) {
   );
 }
 
-/** 打开侧边栏页面、把 active tab 切回目标页，再 reload 侧边栏，使其命中该站点账号。 */
-async function openPanelScopedTo(tabId) {
-  await newTab(extUrl('sidepanel.html'));
-  await wait(1200);
-  const { s: bs } = await attachTo(t => t.type === 'page');
-  await bs.send('Target.activateTarget', { targetId: tabId }).catch(() => {});
-  bs.close();
-  await wait(500);
-  const { s: ps } = await attachTo(t => t.url.includes('sidepanel.html'));
-  await ps.send('Page.reload', { ignoreCache: true });
-  await wait(4000);
-  return ps;
-}
+/**
+ * 点击侧边栏搜索行里的第 idx 个圆形按钮（0=搜索范围，1=只看收藏，2=排序）。
+ *
+ * 只有搜索范围按钮带 aria-label，另两个只挂在 tooltip 上，因此按结构取；
+ * 回读 class 里的 `el-button--*` 供日志确认状态是否切换（只看收藏激活后会变 warning）。
+ */
+const clickSearchSection = idx => `(() => {
+  const btns = [...document.querySelectorAll('.search-section button')];
+  const b = btns[${idx}];
+  if (!b) return 'button not found (' + btns.length + ' in row)';
+  b.click();
+  return 'clicked ' + [...b.classList].filter((c) => c.startsWith('el-button--')).join(' ');
+})()`;
 
-/** 打开一个「网页 + 侧边栏」的并排截图。 */
-async function capturePagePlusPanel(url, ctx, fileName) {
+/**
+ * 点开管理页顶栏的下拉菜单。
+ *
+ * 触发按钮上的文案里还带一个箭头图标，`textContent` 因此不是纯标签，用 `startsWith`
+ * 匹配；顶栏里另有一个会话剩余时间按钮（同为 button），靠文案前缀区分。
+ */
+const openDropdownByLabel = label => `(() => {
+  const wanted = ${JSON.stringify(label)};
+  const isVisible = (n) => !!(n.offsetWidth || n.offsetHeight || n.getClientRects().length);
+  const btn = [...document.querySelectorAll('.header button')]
+    .filter(isVisible)
+    .find((b) => (b.innerText || '').trim().startsWith(wanted));
+  if (!btn) return 'dropdown trigger not found: ' + wanted;
+  btn.click();
+  return 'dropdown opened: ' + wanted;
+})()`;
+
+/**
+ * 点击下拉菜单里的一项。
+ *
+ * 不能复用 clickByLabel：菜单项带图标（`:icon`）时 `li` 里有子元素、文字是裸文本节点，
+ * DOM 里不存在「文本恰好等于标签」的叶子元素，按叶子匹配会报 label not found。
+ */
+const clickMenuItem = label => `(() => {
+  const wanted = ${JSON.stringify(label)};
+  const isVisible = (n) => !!(n.offsetWidth || n.offsetHeight || n.getClientRects().length);
+  const item = [...document.querySelectorAll('.el-dropdown-menu__item')]
+    .filter(isVisible)
+    .find((n) => (n.textContent || '').trim() === wanted);
+  if (!item) return 'menu item not found: ' + wanted;
+  item.click();
+  return 'menu item clicked: ' + wanted;
+})()`;
+
+/** 详情抽屉入口按钮选择器（按界面语言取 aria-label）。 */
+const detailSel = `button[aria-label=${JSON.stringify(UI[LANG].detail)}]`;
+
+/** 打开一个「网页 + 侧边栏」的并排截图；onPanel 用于在截图前操作侧边栏。 */
+async function capturePagePlusPanel(url, ctx, fileName, onPanel) {
   const tab = await newTab(url);
   await wait(1500);
   const { s: page } = await attachTo(t => t.id === tab.id);
   await metrics(page, LEFT_W, BODY);
   const pageBuf = await grab(page);
-  const ps = await openPanelScopedTo(tab.id);
-  await metrics(ps, PANEL_W, BODY);
-  const panelBuf = await grab(ps);
+  const { s: panel, panelId } = await openPanelScopedTo(tab.id);
+  if (onPanel) await onPanel(panel);
+  await metrics(panel, PANEL_W, BODY);
+  const panelBuf = await grab(panel);
   await compose(
     ctx,
     [
@@ -256,12 +260,92 @@ async function capturePagePlusPanel(url, ctx, fileName) {
     out(fileName),
   );
   page.close();
-  ps.close();
+  panel.close();
+  await closeTab(tab.id);
+  await closeTab(panelId);
+}
+
+/** 只拍网页（整屏 1280 宽），用于页内注入 UI 的截图。 */
+async function capturePageOnly(url, ctx, fileName, onReady) {
+  const tab = await newTab(url);
+  await wait(1800);
+  const { s: page } = await attachTo(t => t.id === tab.id);
+  await metrics(page, W, BODY);
+  if (onReady) await onReady(page, tab);
+  await compose(ctx, [{ buf: await grab(page), width: W }], out(fileName));
+  page.close();
+  await closeTab(tab.id);
+}
+
+/**
+ * 自动保存登录凭证：提交一份库里没有的凭据，触发保存确认弹窗。
+ *
+ * 抽成独立函数是为了能单独重跑（`autosave` 模式）——弹窗版式很容易随文案微调
+ * 而需要重截，没必要为此重跑整批。
+ *
+ * 前置：已按同一语言 seed（需要有效的数据库状态，后台才会走完捕获→弹窗链路）。
+ */
+async function captureAutoSave() {
+  await capturePageOnly(
+    pageUrl(HOST_ADMIN, 'demo-login.html'),
+    { title: C.autosave.title, sub: C.autosave.sub },
+    'screen-11-auto-save.png',
+    async page => {
+      await evalIn(
+        page,
+        `(() => {
+          const set = (id, v) => {
+            const el = document.getElementById(id);
+            const d = Object.getOwnPropertyDescriptor(Object.getPrototypeOf(el), 'value');
+            d.set.call(el, v);
+            el.dispatchEvent(new Event('input', { bubbles: true }));
+            el.dispatchEvent(new Event('change', { bubbles: true }));
+          };
+          set('email', 'new-hire@example.com');
+          set('password', 'Demo!Fresh2026x');
+          return 'filled';
+        })()`,
+      );
+      await wait(700);
+      // 演示页的 form 是 onsubmit="return false"，申请提交只发事件不导航，正好停在弹窗上
+      console.log(
+        'submit:',
+        await evalIn(
+          page,
+          `(() => {
+            const f = document.querySelector('form');
+            if (!f) return 'no form';
+            f.requestSubmit();
+            return 'submitted';
+          })()`,
+        ),
+      );
+      await wait(3000);
+    },
+  );
+}
+
+/** 只拍管理页（整屏 1280 宽），先确保已解锁并切到目标语言。 */
+async function captureOptions(ctx, fileName, onReady) {
+  const tab = await newTab(extUrl('options.html'));
+  const { s } = await attachTo(t => t.id === tab.id);
+  await metrics(s, RW, RH);
+  await wait(2500);
+  await unlockIfNeeded(s);
+  await applyLocale(s);
+  if (onReady) await onReady(s);
+  await compose(ctx, [{ buf: await grab(s), width: 1280 }], out(fileName));
+  s.close();
+  await closeTab(tab.id);
 }
 
 await initExtension(EXT_DIR);
 
 if (MODE === 'seeded') {
+  await closeStaleDemoTabs();
+  // 条目列表与侧边栏都要展示网站图标，先把演示域名的 favicon 灌进浏览器本地缓存
+  await warmFavicons(DEMO_HOSTS);
+
   // ---- 一键登录：演示登录页已填充 + 侧边栏命中该站点账号 ----
   const loginTab = await newTab(pageUrl(HOST_ADMIN, 'demo-login.html'));
   await wait(1500);
@@ -286,7 +370,7 @@ if (MODE === 'seeded') {
   );
   await wait(600);
   const loginBuf = await grab(ls);
-  const panel1 = await openPanelScopedTo(loginTab.id);
+  const { s: panel1, panelId } = await openPanelScopedTo(loginTab.id);
   await metrics(panel1, PANEL_W, BODY);
   const panel1Buf = await grab(panel1);
   await compose(
@@ -299,6 +383,8 @@ if (MODE === 'seeded') {
   );
   ls.close();
   panel1.close();
+  await closeTab(loginTab.id);
+  await closeTab(panelId);
 
   // ---- TOTP 两步验证 ----
   await capturePagePlusPanel(
@@ -329,6 +415,148 @@ if (MODE === 'seeded') {
     out('screen-4-security-audit.png'),
   );
   os.close();
+  await closeTab(optTab.id);
+
+  // ---- 收藏置顶 + 只看收藏：切到全站视图，收藏的账号分属不同站点 ----
+  await capturePagePlusPanel(
+    pageUrl(HOST_ADMIN, 'demo-login.html'),
+    { title: C.favorites.title, sub: C.favorites.sub },
+    'screen-7-favorites.png',
+    async panel => {
+      console.log('scope:', await evalIn(panel, clickSearchSection(0)));
+      await wait(1500);
+      console.log('favorites:', await evalIn(panel, clickSearchSection(1)));
+      await wait(1500);
+    },
+  );
+
+  // ---- 条目详情抽屉：ops 那条同时带活码与多标签，展示字段最全 ----
+  await captureOptions({ title: C.detail.title, sub: C.detail.sub }, 'screen-8-detail-drawer.png', async s => {
+    console.log(
+      'drawer:',
+      await evalIn(
+        s,
+        `(() => {
+            const rows = [...document.querySelectorAll('.el-table__row')];
+            const row = rows.find((r) => (r.textContent || '').includes('ops@example.com')) || rows[0];
+            const btn = row && row.querySelector(${JSON.stringify(detailSel)});
+            if (!btn) return 'detail button not found';
+            btn.click();
+            return 'opened';
+          })()`,
+      ),
+    );
+    await wait(2000);
+  });
+
+  // ---- 页内填充面板：内容脚本只收扩展页的 tabs.sendMessage，借管理页当发起方 ----
+  await capturePageOnly(
+    pageUrl(HOST_ADMIN, 'demo-login.html'),
+    { title: C.inline.title, sub: C.inline.sub },
+    'screen-9-inline-fill.png',
+    async (page, tab) => {
+      await evalIn(page, `document.getElementById('email')?.focus()`);
+      const ext = await newTab(extUrl('options.html'));
+      await wait(2000);
+      const { s: es } = await attachTo(t => t.id === ext.id);
+      // 内容脚本注入是异步的：页面刚打开时偶发 "Receiving end does not exist"，
+      // 此时下拉不会展开、截出来是一张没有面板的登录页，因此重试到拿到响应为止。
+      //
+      // 另外必须遍历**所有**同 URL 标签而不是取第一个：上一轮跑批遗留的同地址标签
+      // 里，内容脚本已随扩展重载失效，取第一个会永远失败（实测连续 5 次命中陈旧标签）。
+      // chrome.tabs.query 按窗口内顺序返回，新建的标签排在后面，故从后往前试。
+      for (let attempt = 1; attempt <= 5; attempt++) {
+        const res = await evalIn(
+          es,
+          `(async () => {
+            // CDP targetId 不是 chrome.tabs 的整数 id，只能按 URL 反查
+            const wanted = ${JSON.stringify(tab.url)};
+            const targets = await chrome.tabs.query({ url: wanted });
+            if (!targets.length) return 'demo tab not found: ' + wanted;
+            const failures = [];
+            for (const t of [...targets].reverse()) {
+              try {
+                const res = await chrome.tabs.sendMessage(t.id, { type: 'OPEN_INLINE_DROPDOWN', data: {} });
+                return 'tab ' + t.id + ' -> ' + JSON.stringify(res);
+              } catch (e) {
+                failures.push(t.id + ': ' + e.message);
+              }
+            }
+            return 'all ' + targets.length + ' tab(s) failed: ' + failures.join(' | ');
+          })()`,
+        );
+        console.log(`inline dropdown (attempt ${attempt}):`, res);
+        if (!String(res).includes('failed')) break;
+        await wait(1500);
+      }
+      es.close();
+      await closeTab(ext.id);
+      await wait(1500);
+    },
+  );
+
+  // ---- 页面悬浮按钮：登录页上的可拖拽按钮（配置默认 visible: true）----
+  await capturePageOnly(
+    pageUrl(HOST_ADMIN, 'demo-login.html'),
+    { title: C.floating.title, sub: C.floating.sub },
+    'screen-10-floating-button.png',
+    async page => {
+      // 悬浮按钮的宿主是轻量 DOM 里的 <floating-button-root>，内部走 Closed Shadow DOM，
+      // 因此只能确认宿主已挂载（视觉效果由页面截图体现），不穿透查询内部节点。
+      console.log(
+        'floating button:',
+        await evalIn(
+          page,
+          `(() => {
+            const host = document.querySelector('floating-button-root');
+            if (!host) return 'host not mounted';
+            const r = host.getBoundingClientRect();
+            return 'host mounted, right=' + Math.round(r.right) + ' top=' + Math.round(r.top);
+          })()`,
+        ),
+      );
+      await wait(1200);
+    },
+  );
+
+  // ---- 自动保存登录凭证：提交一份库里没有的凭据，触发保存确认弹窗 ----
+  await captureAutoSave();
+
+  // ---- 导入导出与加密备份：打开「数据管理」下拉，六项能力一屏可见 ----
+  await captureOptions({ title: C.backup.title, sub: C.backup.sub }, 'screen-12-import-backup.png', async s => {
+    console.log('data menu:', await evalIn(s, openDropdownByLabel(UI[LANG].data)));
+    await wait(1200);
+  });
+
+  // ---- 密码生成器双模式：添加密码弹窗里的生成器面板 ----
+  await captureOptions({ title: C.generator.title, sub: C.generator.sub }, 'screen-13-generator.png', async s => {
+    console.log('add dialog:', await clickByLabel(s, UI[LANG].add));
+    await wait(1800);
+    console.log(
+      'generator:',
+      await evalIn(
+        s,
+        `(() => {
+          const btn = document.querySelector('.generator-trigger-btn');
+          if (!btn) return 'trigger not found';
+          btn.click();
+          return 'generator opened';
+        })()`,
+      ),
+    );
+    await wait(1500);
+  });
+
+  // ---- 回收站：数据管理 → 回收站，展示 30 天可恢复 ----
+  await captureOptions({ title: C.trash.title, sub: C.trash.sub }, 'screen-14-trash.png', async s => {
+    console.log('data menu:', await evalIn(s, openDropdownByLabel(UI[LANG].data)));
+    await wait(1200);
+    console.log('trash:', await evalIn(s, clickMenuItem(UI[LANG].trash)));
+    // 回收站属于敏感入口，会先弹「验证主密码」，通过之后才是回收站内容
+    await wait(1800);
+    console.log('trash verify:', await evalIn(s, confirmMasterPassword));
+    await wait(2500);
+  });
 } else if (MODE === 'prefs') {
   // ---- 偏好设置：主题换肤 + 双语切换（需先 seed，管理页处于已解锁状态）----
   const t = await newTab(extUrl('options.html'));
@@ -345,6 +573,10 @@ if (MODE === 'seeded') {
     out('screen-5-preferences.png'),
   );
   s.close();
+  await closeTab(t.id);
+} else if (MODE === 'autosave') {
+  // ---- 只重截自动保存弹窗（需先按同一语言 seed）----
+  await captureAutoSave();
 } else {
   // ---- 本地加密：全新 profile 的首启「设置主密码」页（含安全声明）----
   const t = await newTab(extUrl('options.html'));
@@ -360,7 +592,7 @@ if (MODE === 'seeded') {
       if (els.length < 2) return 'not first-run';
       const d = Object.getOwnPropertyDescriptor(Object.getPrototypeOf(els[0]), 'value');
       for (const el of els) {
-        d.set.call(el, 'Demo!Pass2026');
+        d.set.call(el, DEMO_MASTER_PASSWORD);
         el.dispatchEvent(new Event('input', { bubbles: true }));
         el.dispatchEvent(new Event('change', { bubbles: true }));
       }
@@ -375,4 +607,5 @@ if (MODE === 'seeded') {
     out('screen-6-local-encryption.png'),
   );
   s.close();
+  await closeTab(t.id);
 }

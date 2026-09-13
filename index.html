@@ -6,10 +6,10 @@
       name="viewport"
       content="width=device-width, initial-scale=1.0"
     />
-    <title>账号密码管理助手 Account Password Helper · 开源免费本地密码管理器 | 一键登录 · TOTP · 安全体检</title>
+    <title>开源免费本地密码管理器 · 一键登录 + TOTP | 账号密码管理助手</title>
     <meta
       name="description"
-      content="开源免费的本地密码管理器：一键登录（填充+勾选+点击），敏感字段逐字段 AES-256-GCM 本地加密，TOTP 两步验证、安全体检与密码生成器，支持 Chrome/Bitwarden/1Password 一键导入与多环境账号隔离，侧边栏秒开（缓存快路径 20-50ms），数据不上传服务器。"
+      content="开源免费本地密码管理器：一键登录（填充+勾选+点击）、TOTP 两步验证、多环境账号隔离、离线安全体检。密码逐字段 AES-256-GCM 本机加密，不上传服务器、无需注册账号。"
     />
     <meta
       name="keywords"
@@ -27,6 +27,11 @@
       name="msvalidate.01"
       content="94B7E897F981C21EDC50BB47E07B9874"
     />
+    <!-- 允许搜索引擎在结果页使用大图预览（显式声明 index, follow，与 compare.html 口径一致） -->
+    <meta
+      name="robots"
+      content="index, follow, max-image-preview:large"
+    />
     <!-- Open Graph / 社交分享卡片：微信/QQ/Telegram/X 等平台分享演示页链接时展示预览卡片 -->
     <meta
       property="og:type"
@@ -34,11 +39,11 @@
     />
     <meta
       property="og:title"
-      content="账号密码管理助手 Account Password Helper · 开源免费本地密码管理器 | 一键登录 · TOTP · 安全体检"
+      content="开源免费本地密码管理器 · 一键登录 + TOTP | 账号密码管理助手"
     />
     <meta
       property="og:description"
-      content="开源免费的本地密码管理器：一键登录（填充+勾选+点击），敏感字段逐字段 AES-256-GCM 本地加密，TOTP 两步验证、安全体检与密码生成器，支持 Chrome/Bitwarden/1Password 一键导入与多环境账号隔离，侧边栏秒开（缓存快路径 20-50ms），数据不上传服务器。"
+      content="开源免费本地密码管理器：一键登录（填充+勾选+点击）、TOTP 两步验证、多环境账号隔离、离线安全体检。密码逐字段 AES-256-GCM 本机加密，不上传服务器、无需注册账号。"
     />
     <meta
       property="og:url"
@@ -66,11 +71,11 @@
     />
     <meta
       name="twitter:title"
-      content="账号密码管理助手 Account Password Helper · 开源免费本地密码管理器 | 一键登录 · TOTP · 安全体检"
+      content="开源免费本地密码管理器 · 一键登录 + TOTP | 账号密码管理助手"
     />
     <meta
       name="twitter:description"
-      content="开源免费的本地密码管理器：一键登录（填充+勾选+点击），敏感字段逐字段 AES-256-GCM 本地加密，TOTP 两步验证、安全体检与密码生成器，支持 Chrome/Bitwarden/1Password 一键导入与多环境账号隔离，侧边栏秒开（缓存快路径 20-50ms），数据不上传服务器。"
+      content="开源免费本地密码管理器：一键登录（填充+勾选+点击）、TOTP 两步验证、多环境账号隔离、离线安全体检。密码逐字段 AES-256-GCM 本机加密，不上传服务器、无需注册账号。"
     />
     <meta
       name="twitter:image"
@@ -113,8 +118,8 @@
         "applicationSubCategory": "Password Manager",
         "operatingSystem": "Chrome",
         "browserRequirements": "需要 Chrome 114 或更高版本以使用 Side Panel API（未声明 minimum_chrome_version，旧版本仅侧边栏功能不可用）；兼容 Edge、Brave 等 Chromium 内核浏览器",
-        "softwareVersion": "3.7.0",
-        "dateModified": "2026-09-11",
+        "softwareVersion": "3.9.0",
+        "dateModified": "2026-09-12",
         "isAccessibleForFree": true,
         "offers": {
           "@type": "Offer",
@@ -140,16 +145,52 @@
         "downloadUrl": "https://github.com/liaolongdong/account-password-helper/releases/latest",
         "image": "https://liaolongdong.github.io/account-password-helper/assets/cws-store/marquee-1400x560.png",
         "screenshot": [
-          "https://liaolongdong.github.io/account-password-helper/assets/screenshots/02-password-list.png",
-          "https://liaolongdong.github.io/account-password-helper/assets/screenshots/06-sidepanel-fill.png",
-          "https://liaolongdong.github.io/account-password-helper/assets/screenshots/09-totp-code.png",
-          "https://liaolongdong.github.io/account-password-helper/assets/screenshots/10-health-check.png"
+          "https://liaolongdong.github.io/account-password-helper/assets/cws-store/screen-1-one-click-login.png",
+          "https://liaolongdong.github.io/account-password-helper/assets/cws-store/screen-2-totp.png",
+          "https://liaolongdong.github.io/account-password-helper/assets/cws-store/screen-3-multi-env.png",
+          "https://liaolongdong.github.io/account-password-helper/assets/cws-store/screen-4-security-audit.png",
+          "https://liaolongdong.github.io/account-password-helper/assets/cws-store/screen-5-preferences.png",
+          "https://liaolongdong.github.io/account-password-helper/assets/cws-store/screen-6-local-encryption.png"
         ],
         "license": "https://github.com/liaolongdong/account-password-helper/blob/main/LICENSE",
         "author": {
           "@type": "Person",
-          "name": "liaolongdong"
-        }
+          "@id": "https://liaolongdong.github.io/account-password-helper/#author",
+          "name": "liaolongdong",
+          "url": "https://github.com/liaolongdong",
+          "sameAs": ["https://github.com/liaolongdong"]
+        },
+        "publisher": { "@id": "https://liaolongdong.github.io/account-password-helper/#org" }
+      }
+    </script>
+    <!-- 站点实体：Organization / WebSite 用 @id 与上方 SoftwareApplication 的 publisher、author 互相引用，
+         让搜索引擎与 AI 引擎把「扩展 + 官网 + 维护者」识别为同一个实体。文案保持语言中立，en.html 无需额外替换规则。 -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "Organization",
+            "@id": "https://liaolongdong.github.io/account-password-helper/#org",
+            "name": "Account Password Helper",
+            "alternateName": "账号密码管理助手",
+            "url": "https://liaolongdong.github.io/account-password-helper/",
+            "logo": "https://liaolongdong.github.io/account-password-helper/assets/cws-store/store-icon-128x128.png",
+            "email": "924902324@qq.com",
+            "sameAs": [
+              "https://github.com/liaolongdong/account-password-helper",
+              "https://chromewebstore.google.com/detail/account-password-helper/fgimkdodpjfkddmildjieojpfakpanli"
+            ]
+          },
+          {
+            "@type": "WebSite",
+            "@id": "https://liaolongdong.github.io/account-password-helper/#website",
+            "url": "https://liaolongdong.github.io/account-password-helper/",
+            "name": "Account Password Helper · 账号密码管理助手",
+            "inLanguage": ["zh-CN", "en"],
+            "publisher": { "@id": "https://liaolongdong.github.io/account-password-helper/#org" }
+          }
+        ]
       }
     </script>
     <!-- FAQPage 结构化数据：由 scripts/lib/faq-schema.mjs 从页面可见 FAQS 生成，勿手工改文案 -->
@@ -2587,7 +2628,7 @@
                 <span data-i18n="footer.repo">GitHub 仓库</span>
               </a>
             </span>
-            <span data-i18n="footer.updated">最后更新：2026-09 · v3.7.0</span>
+            <span data-i18n="footer.updated">最后更新：2026-09 · v3.9.0</span>
           </div>
         </div>
         <div class="footer-wechat">
@@ -2724,12 +2765,12 @@
       /** 静态文案字典：与 data-i18n / data-i18n-html 属性一一对应 */
       const I18N = {
         'meta.title': {
-          zh: '账号密码管理助手 Account Password Helper · 开源免费本地密码管理器 | 一键登录 · TOTP · 安全体检',
-          en: 'Account Password Helper · Free Local Password Manager | One-Click Login · TOTP · Security Audit',
+          zh: '开源免费本地密码管理器 · 一键登录 + TOTP | 账号密码管理助手',
+          en: 'Free Local Password Manager - Account Password Helper',
         },
         'meta.description': {
-          zh: '开源免费的本地密码管理器：一键登录（填充+勾选+点击），敏感字段逐字段 AES-256-GCM 本地加密，TOTP 两步验证、安全体检与密码生成器，支持 Chrome/Bitwarden/1Password 一键导入与多环境账号隔离，侧边栏秒开（缓存快路径 20-50ms），数据不上传服务器。',
-          en: 'Free, open-source local password manager: one-click login (fill + tick + click), per-field AES-256-GCM local encryption, built-in TOTP 2FA, security audit & password generator. One-click import from Chrome / Bitwarden / 1Password, multi-environment isolation, side panel opens in ~20–50ms from cache. Password data is never uploaded.',
+          zh: '开源免费本地密码管理器：一键登录（填充+勾选+点击）、TOTP 两步验证、多环境账号隔离、离线安全体检。密码逐字段 AES-256-GCM 本机加密，不上传服务器、无需注册账号。',
+          en: 'Free open-source local password manager for Chrome: one-click login, TOTP 2FA, multi-environment isolation, offline security audit, AES-256-GCM locally.',
         },
         'nav.brand': { zh: '账号密码管理助手', en: 'Account Password Helper' },
         'nav.features': { zh: '特性', en: 'Features' },
@@ -2919,7 +2960,7 @@
           en: 'Email: <a href="mailto:924902324@qq.com?subject=Account Password Helper Feedback">924902324@qq.com</a>',
         },
         'footer.repo': { zh: 'GitHub 仓库', en: 'GitHub Repo' },
-        'footer.updated': { zh: '最后更新：2026-09 · v3.7.0', en: 'Updated: Sep 2026 · v3.7.0' },
+        'footer.updated': { zh: '最后更新：2026-09 · v3.9.0', en: 'Updated: Sep 2026 · v3.9.0' },
         'wechat.title': { zh: '微信交流群', en: 'WeChat Group' },
         'wechat.desc': {
           zh: '扫码添加作者微信，备注「aph」邀你加入插件交流群',
@@ -2939,113 +2980,133 @@
       };
 
       // =================== 数据 ===================
+      // 图片统一取 assets/cws-store/ 的占位演示截图（数据全为 example.com，不含真实凭据）。
+      // 旧的 assets/screenshots/01..12 摄于 v2.12.0 且含真实账号与明文密码，已不再引用。
       const SLIDES = [
         {
-          file: '01-master-password.png',
+          file: 'screen-1-one-click-login.png',
           tag: 'STEP 01',
-          title: { zh: '设置主密码', en: 'Set the master password' },
+          title: { zh: '一键登录：填充 → 勾选 → 提交', en: 'One-click sign-in: fill, tick, submit' },
           desc: {
-            zh: '首次启用时设置一个独一无二的主密码，它是访问所有账号的唯一钥匙。',
-            en: 'Set a unique master password on first launch — the only key to all your accounts.',
+            zh: '在登录页打开侧边栏，点「填充并登录」即可填好账号密码、勾选「记住我」并点击登录；开启「自动触发登录」后，快捷键 Ctrl+Shift+F 也能一步到位。侧边栏按当前域名优先展示，顶栏常驻「+」可就地添加本站账号。',
+            en: 'On a login page, pick an entry in the side panel and choose "Fill and sign in" — credentials filled, "remember me" ticked, sign-in clicked. Turn on "Auto-submit login" and Ctrl+Shift+F does the same. The panel lists the current domain first, and the "+" in its header adds an account for this site on the spot.',
           },
         },
         {
-          file: '02-password-list.png',
+          file: 'screen-2-totp.png',
           tag: 'STEP 02',
-          title: { zh: '密码列表与管理', en: 'Password list & management' },
-          desc: {
-            zh: '集中查看、搜索、编辑全部账号；拼音智能搜索 + 命中高亮 + 标签分类，效率拉满。',
-            en: 'View, search, and edit all accounts in one place; pinyin smart search with match highlighting plus tags for maximum efficiency.',
-          },
-        },
-        {
-          file: '03-excel-import.png',
-          tag: 'STEP 03',
-          title: { zh: 'CSV 批量导入', en: 'CSV bulk import' },
-          desc: {
-            zh: '下载标准模板，一次导入所有历史账号；支持中英文列名，自动识别。',
-            en: 'Download the standard template and import all your accounts at once; Chinese and English headers are auto-detected.',
-          },
-        },
-        {
-          file: '04-excel-export.png',
-          tag: 'STEP 04',
-          title: { zh: '数据批量导出', en: 'Bulk data export' },
-          desc: {
-            zh: '验证主密码，全量导出密码列表，及时备份账号数据。',
-            en: 'Verify the master password and export the full password list for timely backup.',
-          },
-        },
-        {
-          file: '05-add-account.png',
-          tag: 'STEP 05',
-          title: { zh: '添加新账号', en: 'Add new accounts' },
-          desc: {
-            zh: '添加新账号，再也不用担心忘记密码，支持复制、编辑、删除，让密码管理更轻松。',
-            en: 'Add new accounts and never worry about forgetting passwords; copy, edit, and delete supported.',
-          },
-        },
-        {
-          file: '06-sidepanel-fill.png',
-          tag: 'STEP 06',
-          title: { zh: '侧边栏一键填充', en: 'One-click side panel fill' },
-          desc: {
-            zh: '打开登录页，侧边栏按当前域名优先展示，点击账号即可自动填充表单；搜索框右侧图标可切换「本站 / 全站」搜索范围，全站命中的外站账号仍可复制或直接打开站点；顶栏常驻「+」可就地快速添加本站账号（自动预填域名），本站无账号或搜索无结果时也可一键「添加本站账号」。支持自动保存账号密码',
-            en: 'On login pages the side panel prioritizes the current domain; click an account to auto-fill. The icon beside the search box toggles between this-site and all-entry search — off-site hits can still be copied or opened directly in a new tab. A persistent "+" in the header quickly adds an account for this site with the domain pre-filled — so does the one-click "Add account for this site" when the site has none or a search returns nothing. Auto-save supported.',
-          },
-        },
-        {
-          file: '07-floating-button.png',
-          tag: 'STEP 07',
-          title: { zh: '悬浮按钮快捷入口', en: 'Floating button shortcut' },
-          desc: {
-            zh: '可拖动的悬浮按钮始终伴随登录页，一键唤起填充面板，位置可自定义。',
-            en: 'A draggable floating button follows every login page; open the fill panel with one click, position customizable.',
-          },
-        },
-        {
-          file: '08-session-validity.png',
-          tag: 'STEP 08',
-          title: { zh: '灵活的会话有效期', en: 'Flexible session validity' },
-          desc: {
-            zh: '从 1 小时到 7 天任你选；会话剩余时间在管理页头部、侧边栏与 Popup 常驻展示，剩余 10 分钟内转警示橙、最后 1 分钟转危急红，点击即可直达续期；过期后仅清除内存中的会话密钥与解密缓存，磁盘数据始终是密文，安全无忧。',
-            en: 'From 1 hour to 7 days; the remaining session time stays visible in the manager header, sidebar and popup — warning amber within the last 10 minutes and critical red within the final minute, with a click to extend. On expiry the session key material and decrypted cache are cleared; data on disk is ciphertext throughout.',
-          },
-        },
-        {
-          file: '09-totp-code.png',
-          tag: 'STEP 09',
           title: { zh: 'TOTP 两步验证', en: 'TOTP two-factor codes' },
           desc: {
-            zh: '扫描网页二维码或上传图片一键添加密钥，动态验证码本地生成，环形倒计时实时展示，支持一键填充 / 复制。',
-            en: 'Add a secret by scanning an on-page QR code or uploading an image; codes are generated locally with a live ring countdown, plus one-click fill / copy.',
+            zh: '扫描网页二维码或上传图片即可添加密钥，动态码按 RFC 6238 在本机生成；列表与侧边栏同屏显示活码与倒计时环，登录走到第二步时可一键填入。',
+            en: 'Add a secret by scanning an on-page QR code or uploading an image; codes are computed locally per RFC 6238. The live code and its countdown ring sit in the list and side panel, ready to fill when a login reaches its second step.',
           },
         },
         {
-          file: '10-health-check.png',
+          file: 'screen-3-multi-env.png',
+          tag: 'STEP 03',
+          title: { zh: '多环境账号隔离', en: 'Per-environment isolation' },
+          desc: {
+            zh: '条目按精确域名匹配，开发、测试、预发、生产各留各的凭证；标签分类配合网站图标，让同一站点的一排账号一眼分清。',
+            en: 'Entries match the exact host name, so dev, test, staging and production credentials for one app never mix; tags and site icons keep a long list scannable at a glance.',
+          },
+        },
+        {
+          file: 'screen-4-security-audit.png',
+          tag: 'STEP 04',
+          title: { zh: '离线安全体检', en: 'Offline security audit' },
+          desc: {
+            zh: '一键生成 0–100 综合评分：密码复用、弱密码、命中内置常见泄露字典、长期未更新四类问题按受影响条目占比加权扣分，未开启两步验证的条目单独列出；全程本机计算，不发起查询请求。',
+            en: 'One click yields a 0–100 score: reuse, weak passwords, hits in the bundled leaked-password list and staleness each cost points in proportion to how many entries they touch, while entries without a TOTP key are listed separately. Everything is computed on your device.',
+          },
+        },
+        {
+          file: 'screen-6-local-encryption.png',
+          tag: 'STEP 05',
+          title: { zh: '本地加密与主密码', en: 'Local encryption and master password' },
+          desc: {
+            zh: '首次启用设置主密码，经 PBKDF2（600,000 次迭代）派生密钥；账号、密码、网址、备注与两步验证密钥分别以 AES-256-GCM 加密后写入本地存储，密文只落在本机的 local / session 存储里。',
+            en: 'Set the master password on first run; PBKDF2 (600,000 iterations) derives the key, and username, password, URL, note and TOTP secret are each AES-256-GCM encrypted before they reach local storage — ciphertext stays in the local and session stores on this machine.',
+          },
+        },
+        {
+          file: 'screen-7-favorites.png',
+          tag: 'STEP 06',
+          title: { zh: '标签、收藏与智能搜索', en: 'Tags, favorites and smart search' },
+          desc: {
+            zh: '搜索同时匹配用户名、标签、备注与网址，认拼音全拼与首字母并高亮命中片段；星标收藏会置顶显示，再点一下只看收藏，标签按名称稳定配色。',
+            en: 'Search matches username, tags, notes and web address at once, understands pinyin written out and by its initials, and highlights what matched. Starred entries pin to the top, one more click shows favorites only, and every tag keeps its own colour.',
+          },
+        },
+        {
+          file: 'screen-8-detail-drawer.png',
+          tag: 'STEP 07',
+          title: { zh: '只读详情与修改历史', en: 'Read-only details and history' },
+          desc: {
+            zh: '每行「查看详情」以抽屉展示完整备注、两步验证活码与密码修改历史，不必进入编辑态；密码默认掩码，点眼睛才显示，复制后按设定的秒数自动清理剪贴板。',
+            en: '"View details" opens a drawer with the full note, the live TOTP code and the password change history — no need to enter edit mode. Passwords stay masked until you click the eye, and the clipboard clears itself on the timer you set.',
+          },
+        },
+        {
+          file: 'screen-9-inline-fill.png',
+          tag: 'STEP 08',
+          title: { zh: '页内填充面板', en: 'In-page fill panel' },
+          desc: {
+            zh: '输入框获焦后点钥匙图标，就在框边挑账号直接填充；快捷键 Ctrl+Shift+K 可直接唤起，面板带网站图标、标签与收藏标识。',
+            en: 'A key icon inside the field opens a mini panel right beside it — search, pick, fill. Open it directly with Ctrl+Shift+K; site icons, tags and favorite marks are all there.',
+          },
+        },
+        {
+          file: 'screen-10-floating-button.png',
+          tag: 'STEP 09',
+          title: { zh: '页面悬浮填充按钮', en: 'Floating fill button' },
+          desc: {
+            zh: '登录页上常驻一枚可拖拽的悬浮按钮，拖到任意位置会自动吸附屏幕边缘，透明度 10%~100% 可调；浮层自带设置面板，不用切回管理页就能就地调整。',
+            en: 'A draggable button follows every login page, snapping to the screen edge wherever you drop it, with opacity adjustable from 10% to 100% and its own settings panel in the overlay — no trip back to the management page.',
+          },
+        },
+        {
+          file: 'screen-11-auto-save.png',
           tag: 'STEP 10',
-          title: { zh: '安全体检仪表盘', en: 'Security health dashboard' },
+          title: { zh: '自动保存登录凭证', en: 'Auto-save credentials' },
           desc: {
-            zh: '一键体检生成 0~100 综合评分，四个计分维度加权评估密码风险并支持到期提醒，全程本地计算。',
-            en: 'One-click scan yields a 0–100 score across five risk checks, with expiry reminders — computed fully locally.',
+            zh: '提交登录时弹窗确认，自动去重，可设域名黑白名单与「不再提示」；密码偏弱或被多个账号复用时在同一弹窗中提醒，同一账号改了密码则自动转为「更新」并沿用原有标签与备注。',
+            en: "Submitting a login asks before storing anything, de-duplicates what it catches, and lets you allow or block domains. Weak or reused passwords are flagged in the same prompt, and a changed password switches it to update mode, carrying over the entry's existing tags and note.",
           },
         },
         {
-          file: '11-inline-fill.png',
+          file: 'screen-12-import-backup.png',
           tag: 'STEP 11',
-          title: { zh: '内联填充迷你面板', en: 'Inline fill mini panel' },
+          title: { zh: '导入导出与加密备份', en: 'Import, export and encrypted backup' },
           desc: {
-            zh: '登录框内钥匙图标展开迷你面板，搜索选择账号即填，快捷键 Ctrl+Shift+K 直接唤起。',
-            en: 'A key icon inside the login field opens a mini panel — search, pick, fill; open directly with Ctrl+Shift+K.',
+            zh: '支持 CSV 与 JSON 双向导入导出，自动识别主流密码管理器导出表格的字段（含两步验证密钥列），可整库导出也可勾选条目批量导出；另有 .aph 加密备份（每次导出换用新的随机盐与初始化向量）与邮箱备份提醒。',
+            en: 'CSV and JSON both ways, with the columns of common password-manager exports detected automatically (two-factor keys included); export the whole vault or just the entries you tick. Plus encrypted .aph backups — fresh salt and IV on every export — and email backup reminders.',
           },
         },
         {
-          file: '12-theme-skin.png',
+          file: 'screen-13-generator.png',
           tag: 'STEP 12',
-          title: { zh: '主题换肤与双语界面', en: 'Themes & bilingual UI' },
+          title: { zh: '密码生成器双模式', en: 'Dual-mode password generator' },
           desc: {
-            zh: '6 款色彩主题与中英文界面即时切换，扩展页与页面内组件同步生效。',
-            en: 'Six color themes and instant Chinese/English switching, synchronized across extension pages and in-page UI.',
+            zh: '随机密码 6~50 位可调（默认 16 位），启用的每种字符集保证至少各出现一次，并可排除 0/O、1/l 一类易混淆字符；助记词组模式从内置的 3,080 词英文词库取 3~8 个单词，可追加数字与分隔符。',
+            en: 'Random passwords run 6 to 50 characters (16 by default), every enabled character set is guaranteed to appear at least once, and ambiguous characters such as 0/O and 1/l can be excluded. Passphrase mode draws 3 to 8 words from the bundled 3,080-word English list, with optional digits and separators.',
+          },
+        },
+        {
+          file: 'screen-14-trash.png',
+          tag: 'STEP 13',
+          title: { zh: '回收站与误删恢复', en: 'Trash and recovery' },
+          desc: {
+            zh: '删除的条目进入回收站保留 30 天可恢复，在回收站里彻底删除会连带清掉它的历史快照与到期提醒；每条密码默认留存 3 份加密历史快照（可调 1~10 份）以便回滚。',
+            en: 'Deleted entries stay recoverable in the trash for 30 days; purging one there also clears its history snapshots and pending reminders. Each password keeps 3 encrypted snapshots by default (configurable 1 to 10) so a change can be rolled back.',
+          },
+        },
+        {
+          file: 'screen-5-preferences.png',
+          tag: 'STEP 14',
+          title: { zh: '主题换肤与双语界面', en: 'Themes and bilingual UI' },
+          desc: {
+            zh: '6 款色彩主题与中英文界面即时切换，扩展页与注入页面的浮层同步生效；四个默认快捷键可在浏览器的「扩展程序快捷键」页改键。',
+            en: "Six color themes and instant Chinese/English switching, applied to extension pages and injected overlays alike. The four default shortcuts can be rebound on the browser's own extensions-shortcuts page.",
           },
         },
       ];
@@ -3433,6 +3494,9 @@
       let timer = null;
       const INTERVAL = 5000;
 
+      /** 截图分中英两套（英文版文件名带 -en 后缀），按当前语言取对应一套 */
+      const shotFile = f => (lang === 'en' ? f.replace(/\.png$/, '-en.png') : f);
+
       /** 按当前语言（重）渲染全部轮播 slide 与圆点，保留当前所在位置 */
       function renderCarousel() {
         track.innerHTML = '';
@@ -3442,7 +3506,7 @@
           slide.className = 'slide';
           slide.innerHTML = `
         <div class="slide-shot">
-          <img src="./assets/screenshots/${s.file}" alt="${s.title[lang]}" data-title="${s.title[lang]}" loading="lazy" />
+          <img src="./assets/cws-store/${shotFile(s.file)}" alt="${s.title[lang]}" data-title="${s.title[lang]}" loading="lazy" />
         </div>
         <div class="slide-info">
           <span class="step-tag">${s.tag}</span>

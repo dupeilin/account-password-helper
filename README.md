@@ -11,6 +11,7 @@
 [![Manifest V3](https://img.shields.io/badge/Chrome-MV3-4285F4?style=for-the-badge&logo=googlechrome&logoColor=white)](https://developer.chrome.com/docs/extensions/mv3/intro/)
 [![License](https://img.shields.io/badge/License-GPL--3.0-blue?style=for-the-badge)](#许可证)
 [![Last Commit](https://img.shields.io/github/last-commit/liaolongdong/account-password-helper?style=for-the-badge&label=Last%20Commit&logo=github&logoColor=white)](https://github.com/liaolongdong/account-password-helper/commits/main)
+[![CI](https://img.shields.io/github/actions/workflow/status/liaolongdong/account-password-helper/ci.yml?style=for-the-badge&label=CI&logo=github&logoColor=white)](https://github.com/liaolongdong/account-password-helper/actions/workflows/ci.yml)
 
 > **开源免费的本地优先密码管理器** · 一键登录（填充 → 勾选 → 点击） · 本地 AES-256-GCM 零云端 · TOTP 两步验证 · 安全体检 · 多环境账号隔离 · 从 Chrome / Bitwarden / 1Password 一键迁移 · 为开发者与测试人员量身打造
 
@@ -18,14 +19,14 @@
 
 > **安全声明**：所有数据仅保存在浏览器本地，敏感字段经 AES-256-GCM 逐字段加密，密码数据永不经过网络传输——扩展唯一的出站行为是每 6 小时一次的版本更新检查（匿名读取 Chrome 商店可达性与 GitHub Releases 版本号，不携带任何账号数据），详见[权限与数据流向](#-权限与数据流向)。建议不要在任何浏览器扩展中存放银行、支付等高敏感凭证。
 >
-> 🌐 **在线演示**：https://liaolongdong.github.io/account-password-helper/ ｜ 📊 **技术亮点**：PBKDF2 600K 迭代 · AES-256-GCM 认证加密 · 侧边栏全场景秒开（缓存快路径 20-50ms）· 6 款主题 · 中英文双语 · 核心功能离线可用 · 632 项自动化测试
+> 🌐 **在线演示**：https://liaolongdong.github.io/account-password-helper/ ｜ 📊 **技术亮点**：PBKDF2 600K 迭代 · AES-256-GCM 认证加密 · 侧边栏全场景秒开（缓存快路径 20-50ms）· 6 款主题 · 中英文双语 · 核心功能离线可用 · 642 项自动化测试
 
-**目录**：[核心优势](#-核心优势) · [功能演示](#-功能演示) · [横向对比](#横向对比) · [核心特性](#核心特性) · [权限与数据流向](#-权限与数据流向) · [快速开始](#快速开始) · [常见问题](#常见问题) · [许可证](#许可证)
+**目录**：[核心优势](#-核心优势) · [功能演示](#-功能演示) · [横向对比](#横向对比) · [核心特性](#核心特性) · [权限与数据流向](#-权限与数据流向) · [快速开始](#快速开始) · [常见问题](#常见问题) · [参与贡献](#参与贡献) · [许可证](#许可证)
 
 <p align="center">
   <img src="./assets/icons/icon.svg" alt="账号密码管理助手扩展图标" width="120" />
   <br/>
-  <img src="./docs/demo-login.webp" alt="一键登录演示：快捷键触发自动填充、勾选同意条款并点击登录" width="100%" />
+  <img src="./docs/demo-login.webp" alt="一键登录演示：侧边栏选中条目后自动填充账号密码、勾选同意条款并点击登录" width="100%" />
   <br/>
   <sub>Ctrl+Shift+F → 自动填充 → 勾选「记住我 / 同意条款」→（开启「自动触发登录」后）自动点击登录 → 2FA 活码接力，1 秒完成</sub>
 </p>
@@ -48,37 +49,43 @@
 <table>
   <tr>
     <td width="50%" align="center">
-      <img src="./assets/screenshots/09-totp-code.png" alt="编辑密码弹窗中的两步验证字段：密钥、实时验证码与 30 秒倒计时" width="100%" /><br />
-      <sub><b>内置 TOTP</b> — 密钥与 30 秒活码同屏，支持扫码或上传图片添加</sub>
+      <img src="./assets/cws-store/screen-1-one-click-login.png" alt="一键登录：侧边栏选中条目后填充账号密码、勾选记住我并点击登录按钮" width="100%" /><br />
+      <sub><b>一键登录</b> — 填充、勾选、提交合成一步；快捷键 Ctrl+Shift+F 默认只填充与勾选，开启「自动触发登录」后才代为提交</sub>
     </td>
     <td width="50%" align="center">
-      <img src="./assets/screenshots/10-health-check.png" alt="安全体检面板：71 分综合评分与密码复用、弱密码、常见泄露密码、长期未更新四维检测结果" width="100%" /><br />
-      <sub><b>离线安全体检</b> — 0-100 四维加权评分，未开 2FA 单独列示</sub>
+      <img src="./assets/cws-store/screen-2-totp.png" alt="两步验证：密码列表内直接展示 6 位活码与倒计时圆环" width="100%" /><br />
+      <sub><b>内置 TOTP</b> — 验证码与密码存在一起，30 秒活码就地显示，支持自定义算法与 6 / 7 / 8 位</sub>
+    </td>
+  </tr>
+  <tr>
+    <td colspan="2" align="center">
+      <img src="./docs/demo-totp.webp" alt="两步验证接力演示：页内面板填充登录、跳到验证码页后活码胶囊自动跟上、点一下把动态码填进输入框" width="62%" /><br />
+      <sub><b>两步验证接力</b> — 页内面板选中账号 → 填充登录 → 同域名验证码页自动锚定活码胶囊 → 点「填入」把动态码填进输入框，全程不用摸手机</sub>
     </td>
   </tr>
   <tr>
     <td width="50%" align="center">
-      <img src="./assets/screenshots/02-password-list.png" alt="密码列表：站点图标、标签、收藏置顶、更新时间与批量操作" width="100%" /><br />
-      <sub><b>列表与管理</b> — 标签筛选、收藏置顶、拼音搜索、一键去重</sub>
+      <img src="./assets/cws-store/screen-3-multi-env.png" alt="多环境账号管理：同一站点的开发、测试、生产账号用标签分开" width="100%" /><br />
+      <sub><b>多环境隔离</b> — 同一站点存多套账号，按标签区分开发 / 测试 / 生产，填充时按域名精确匹配</sub>
     </td>
     <td width="50%" align="center">
-      <img src="./assets/screenshots/11-inline-fill.png" alt="登录页内联填充迷你面板：搜索框与匹配当前站点的账号列表" width="100%" /><br />
-      <sub><b>内联填充</b> — 登录框内钥匙图标展开迷你面板，键盘可全程操作</sub>
+      <img src="./assets/cws-store/screen-4-security-audit.png" alt="离线安全体检：0 到 100 分综合评分与四类问题明细" width="100%" /><br />
+      <sub><b>离线安全体检</b> — 0-100 四维加权评分：复用、弱密码、命中泄露词表、长期未更新，全程本机计算</sub>
     </td>
   </tr>
   <tr>
     <td width="50%" align="center">
-      <img src="./assets/screenshots/06-sidepanel-fill.png" alt="自动保存账号密码确认卡：账号、密码、标签、备注与保存或暂不保存选项" width="100%" /><br />
-      <sub><b>自动保存凭证</b> — 登录后弹出保存确认卡，可编辑标签备注、智能去重</sub>
+      <img src="./assets/cws-store/screen-5-preferences.png" alt="偏好设置：六款色彩主题色块与中英文语言切换" width="100%" /><br />
+      <sub><b>主题与双语</b> — 6 款色彩主题 + 中英文界面即时切换，闲置锁定与会话有效期各自独立配置</sub>
     </td>
     <td width="50%" align="center">
-      <img src="./assets/screenshots/12-theme-skin.png" alt="偏好设置面板：6 款色彩主题色块与中英文语言切换" width="100%" /><br />
-      <sub><b>主题与双语</b> — 6 款色彩主题 + 中英文界面即时切换</sub>
+      <img src="./assets/cws-store/screen-6-local-encryption.png" alt="本地加密：首次使用设置主密码，数据加密后只存本机浏览器" width="100%" /><br />
+      <sub><b>本地加密</b> — PBKDF2-SHA256 60 万次迭代派生密钥，五个敏感字段逐个 AES-256-GCM 加密后写入本地存储</sub>
     </td>
   </tr>
 </table>
 
-> 📸 一键登录的完整动作（填充 → 勾选 → 点击）见上方演示动图；悬浮按钮、会话有效期、CSV 导入导出等更多界面见[在线演示页面](https://liaolongdong.github.io/account-password-helper/)。
+> 📸 以上截图与动图取自商店素材流水线（`scripts/store-shots/`，占位演示数据）。内联填充迷你面板、页面悬浮按钮、CSV 导入导出等更多界面见[在线演示页面](https://liaolongdong.github.io/account-password-helper/)。
 
 ## 横向对比
 
@@ -101,7 +108,7 @@
 
 - **浏览器原生强加密**：主密码经 PBKDF2-SHA256（600,000 次迭代）派生密钥，用户名/密码/URL/备注/TOTP 五个敏感字段逐字段 AES-256-GCM 加密（每次使用新的随机 IV），标签与时间戳等非敏感元数据保持明文以支撑列表展示；密码数据不经网络传输
 - **灵活的会话管理**：有效期 1 小时\~7 天可选（默认 24 小时）；闲置自动锁定与浏览器重启锁定可单独开启（默认关闭）；Popup 一键锁定，剩余时间在管理页/侧边栏/Popup 常驻展示并在临近过期时变色预警，点击徽标即可续期
-- **离线安全体检**：一键 0\~100 综合评分，四维加权（密码复用 35 / 弱密码 25 / 命中离线泄露字典 20 / 长期未更新 20），未开启 2FA 单独列出但不扣分；泄露字典为内置 Top 1000 离线词表，全程不联网
+- **离线安全体检**：一键 0\~100 综合评分，四维加权（密码复用 35 / 弱密码 25 / 命中离线泄露字典 20 / 长期未更新 20），未开启 2FA 单独列出但不扣分；泄露字典为内置近千条离线词表，全程不联网
 - **TOTP 两步验证**：验证码本地生成（RFC 6238），列表与侧边栏实时活码与倒计时；支持扫描网页二维码或上传图片一键添加密钥；GitHub 式两步登录自动衔接活码胶囊
 
 ### ⚡ 智能填充
@@ -109,7 +116,7 @@
 - **一键登录，不只是填充**：`Ctrl+Shift+F`（Mac `Cmd+Shift+F`）先把当前站点最匹配的账号填入，并自动勾选「记住我 / 已阅读并同意 / 接受条款」一类协议复选框；在偏好设置中开启「自动触发登录」（或使用侧边栏条目的「填充并登录」图标），即可一步走完填充 → 勾选 → 点击登录
 - **四重填充策略**：内联填充（输入框钥匙图标，默认）、侧边栏一键填充、右键填充（输入框右键「填充账号密码」，或「生成并填充强密码」——后者不读取任何已存凭证，会话锁定时同样可用）、快捷键一键填充；动态检测登录表单（含跨 iframe），兼容 React/Vue 等主流框架与用户名+密码、手机号+验证码等场景；填充失败经页面内提示 + 桌面通知 + 工具栏角标多层反馈，会话失效时就地弹出解锁引导
 - **自动保存凭证**：Chrome 式登录捕获与保存确认，智能去重（相同凭证不重复提示、密码变化弹「更新」确认）、域名黑白名单、「不再提示」一键屏蔽；保存弹窗内联提示弱密码与密码复用风险（只提醒，不影响保存流程）
-- **精确域名匹配**：所有填充入口与列表均只展示与当前 host 完全一致的条目，dev/test/staging/prod 账号互不混淆（`localhost` 除外，默认匹配全部）
+- **精确域名匹配**：所有填充入口与列表均只展示与当前 host 完全一致的条目，dev/test/staging/prod 账号互不混淆（`localhost` / `127.0.0.1` 再按端口区分，页面不带端口时展示全部）
 - **侧边栏快速添加与全站搜索**：顶栏「+」就地添加账号（网址自动预填当前域名）；搜索框右侧图标一键切换「本站 / 全站」范围，全站命中的外站账号仍可复制账号/密码/验证码、收藏与编辑，点击整行在新标签页打开
 
 ### 📦 数据管理
@@ -239,6 +246,19 @@ A：侧边栏依赖 Chrome 的 Side Panel API（需 Chrome >= 114），也可点
 - 主密码遗忘**无法恢复**，请务必牢记并妥善保管；
 - 敏感字段本地 AES-256-GCM 逐字段加密存储，密码数据从不作为明文离开本机（唯一外联为匿名版本检查）；
 - 建议定期通过加密备份功能（.aph 文件）导出备份，并开启剪贴板自动清除与闲置自动锁定；对安全性要求较高时开启「浏览器重启锁定」。
+
+## 参与贡献
+
+欢迎 Issue 和 Pull Request。这是一个本地优先项目，两条硬约束是**密码数据不出本机**与**权限最小化**，跨线的建议请先在 Issue 里讨论。
+
+- **提 Issue / 功能建议**：[选择模板](https://github.com/liaolongdong/account-password-helper/issues/new/choose)（缺陷、功能两套模板，含复现步骤与影响面）
+- **报安全问题**：请走 [.github/SECURITY.md](./.github/SECURITY.md) 的私密渠道，不要开公开 Issue
+- **贴截图或日志之前**：请把真实账号、邮箱、密码与 TOTP 活码换成 `example.com` / `dummy` 这类占位数据——公开内容无法真正撤回
+- **开发环境与命令**：[docs/CONTRIBUTING.md](./docs/CONTRIBUTING.md) ｜ **行为准则**：[.github/CODE_OF_CONDUCT.md](./.github/CODE_OF_CONDUCT.md)
+- **质量门禁**：每个 PR 与 `main` 的提交由 [ci.yml](./.github/workflows/ci.yml) 自动跑 `typecheck` / `lint` / `lint:style` / `test:run` / `build`（Chrome 与 Firefox 双构建）
+- **供 AI 引擎引用**：机器可读的项目摘要见 [llms.txt](https://liaolongdong.github.io/account-password-helper/llms.txt)，与站点的 `robots.txt`、`sitemap.xml` 配套，供 ChatGPT / Perplexity / Claude 等检索与引用
+
+完整变更记录见 [CHANGELOG.md](./CHANGELOG.md)。
 
 ## 许可证
 
