@@ -26,7 +26,7 @@ A **free, open-source** local Chrome password manager: **one-click login** that 
 <p align="center">
   <img src="./assets/icons/icon.svg" alt="Account Password Helper extension icon" width="120" />
   <br/>
-  <img src="./docs/demo-login.webp" alt="One-click login demo: shortcut triggers autofill, ticks the consent box and clicks sign in" width="100%" />
+  <img src="./assets/cws-store/screen-1-one-click-login.png" alt="One-click login demo: pick an entry in the side panel and it fills the credentials, ticks the consent box and clicks sign in" width="100%" />
   <br/>
   <sub>Ctrl+Shift+F → autofill → tick "remember me / I agree" → (with "Auto-submit login" on) click login → 2FA live-code handoff → done in 1 second</sub>
 </p>
@@ -110,7 +110,7 @@ A **free, open-source** local Chrome password manager: **one-click login** that 
 - **One-keystroke login, not just fill**: `Ctrl+Shift+F` (Mac `Cmd+Shift+F`) fills the best-matching account for the site and ticks consent boxes matched by keywords such as "remember me / I have read and agree / accept terms"; turn on "Auto-submit login" in preferences (or use the "Fill and sign in" icon on a side panel entry) and one press runs the whole chain — fill → tick → click login
 - **Quadruple fill strategy**: Inline fill (key icon in the input, the default), side panel one-click fill, right-click fill (right-click an input → "Fill Credentials", or "Generate & Fill Strong Password" — the latter touches no stored credential, so it works even while the session is locked), and the quick-fill shortcut. Fill failures are reported through an in-page notice + desktop notification + toolbar badge, and a locked session opens an unlock prompt right on the page
 - **Auto-save credentials**: Chrome-style capture with save confirmation, smart dedup (identical credentials never re-prompt, changed passwords trigger an "Update" confirmation), domain allow/block lists, one-click "Never for this site"; the save prompt also flags weak and reused passwords inline (a heads-up only — it never blocks saving)
-- **Exact domain matching**: Every fill entry point and list shows only entries whose host exactly matches the current page, keeping dev/test/staging/prod accounts apart (`localhost` matches everything by default)
+- **Exact domain matching**: Every fill entry point and list shows only entries whose host exactly matches the current page, keeping dev/test/staging/prod accounts apart (on `localhost` / `127.0.0.1` the port is matched too; a port-less page shows everything)
 - **Side panel quick add & search scope**: Click "+" in the header to save credentials in place with the current domain prefilled; the icon beside the search box toggles between "This site" and "All entries", and off-site hits stay copyable, favoritable and editable with the whole row opening that site in a new tab
 
 ### 📦 Data Management

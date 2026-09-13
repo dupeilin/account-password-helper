@@ -38,7 +38,7 @@
 3. 填写商店信息（Store Listing）：
 
    **基本信息**：
-   - **名称**：中文 `账号密码管理助手 - 本地加密密码管理器与自动填充`（25 / 45 字符）/ 英文 `Account Password Helper - Password Manager`（42 / 45 字符）（须与 `public/_locales/*/messages.json` 的 `extensionName` 逐字一致）
+   - **名称**：中文 `账号密码管理助手 - 本地加密密码管理器与自动填充及两步验证`（30 / 45 字符）/ 英文 `Account Password Helper - Password Manager`（42 / 45 字符）（须与 `public/_locales/*/messages.json` 的 `extensionName` 逐字一致）
    - **摘要**（132字符硬限制，中英各一条）：
      - 权威来源是 `public/_locales/zh_CN/messages.json` 与 `en/messages.json` 的 `extensionDescription`（manifest 通过 `__MSG_extensionDescription__` 引用）。商店列表必须粘贴**同一句话**——两份副本逐字一致，否则审核会判定描述与 manifest 不符。可直接粘贴的当前文案见 `CWS_FILL_CONTENT.md`「第二步 → 摘要」。
      - ✅ 口径已订正：旧文案中的「零联网」/「100% offline」并不成立（扩展每 6 小时发起一次不携带用户数据的匿名版本检查），两份 `_locales` 的 `extensionDescription` 已改为限定口径。

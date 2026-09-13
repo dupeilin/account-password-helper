@@ -65,3 +65,8 @@ export async function newTab(url) {
   });
   return res.json();
 }
+
+/** 按 targetId 关闭标签（跑批之间清理，避免残留标签干扰目标定位）。 */
+export async function closeTab(id) {
+  await fetch(`${HOST}/json/close/${id}`).catch(() => {});
+}

@@ -490,7 +490,7 @@ async function ensureAuthenticatedCache(): Promise<PasswordCache | null> {
  * 获取匹配当前域名的账号元数据（供内联下拉使用，绝不返回密码）
  *
  * 安全：会话锁定时返回 `{ locked: true, accounts: [] }`，不触碰任何凭证；
- * 匹配规则与侧边栏 filteredPasswords 一致（本地开发域名放行全部，否则纳入「URL 为空」或「域名与 url 双向包含」的条目）。
+ * 匹配规则与侧边栏 filteredPasswords 一致：仅精确 host 匹配，本地开发域名按端口过滤，「URL 为空」的通用条目始终纳入。
  * 排序：复用 sortPasswordEntries + 侧边栏排序配置 + 域名优先级 + 收藏置顶。
  *
  * @param domain 当前页面顶层域名（hostname）

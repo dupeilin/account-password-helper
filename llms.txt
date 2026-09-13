@@ -5,9 +5,9 @@
 ## Quick Facts
 
 - **Price**: Completely free, open-source (GPL-3.0)
-- **Data storage**: 100% local browser storage, zero cloud
+- **Data storage**: browser-local only — persistent ciphertext in `chrome.storage.local`, in-memory key material in `chrome.storage.session`; the `chrome.storage.sync` store that follows your browser account is never used
 - **Encryption**: PBKDF2 (600,000 iterations) + AES-256-GCM via Web Crypto API
-- **Performance**: Side panel loads in 20-50ms on the warm cache path; opens instantly (<1s) even after session expiry
+- **Performance**: side panel returns data in about 20–50ms on the warm cache path; sub-second open across cold start, an expired session and a quick browser restart is an explicit tuning target of this project
 - **Languages**: Chinese + English bilingual UI, instant switching
 - **Themes**: 6 color themes (Sky Blue, Bamboo Green, Peach Pink, Blossom Mauve, Sunset Orange, Misty Slate)
 - **Browser support**: Manifest V3; the side panel needs Chrome 114+ (Side Panel API) — no `minimum_chrome_version` is declared, so older Chrome simply loses side panel features
@@ -18,8 +18,8 @@
 
 ## Key Features
 
-- **One-click login**: "Fill and sign in" in the side panel autofills credentials → ticks the consent checkbox → clicks the login button, completing sign-in in about a second; the global "Auto login trigger" preference (off by default) does the same on every fill. The Ctrl+Shift+F quick-fill shortcut only fills — it never submits.
-- **Multi-environment isolation**: exact-domain matching separates dev / test / staging / prod accounts for the same site — zero mix-ups
+- **One-click login**: "Fill and sign in" in the side panel autofills credentials → ticks the consent checkbox → clicks the login button. `Ctrl+Shift+F` fills and ticks by default, and submits the form only after you turn on "Auto-submit login" in the preferences (off by default) — so it never clicks sign-in behind your back.
+- **Multi-environment isolation**: entries surface only when the normalized hostname matches the current page exactly, so dev / test / staging / prod accounts for the same site stay separated (on `localhost` and `127.0.0.1` the port is matched as well, so two local projects on `:3000` and `:5173` stay apart)
 - **Built-in TOTP 2FA authenticator**: RFC 6238 codes generated locally, GitHub-style two-step login auto-anchors a live code capsule — no phone authenticator app needed
 - **Per-field AES-256-GCM encryption**: PBKDF2 (600,000 iterations) + AES-256-GCM via Web Crypto API; username, password, URL, remark and TOTP secret are encrypted field by field before touching disk, and password data is never uploaded
 - **Offline security audit**: one-click 0–100 score weighted across four dimensions (reused 35 / weak 25 / commonly leaked 20 / stale 20), with missing-2FA reported separately but unscored — all computed on-device

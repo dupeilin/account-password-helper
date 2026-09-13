@@ -278,7 +278,7 @@ graph TB
 - 主密码至少 8 位，必须包含字母、数字和特殊字符。
 - 会话解锁后条目按需解密到内存（SW 密码缓存 / `storage.session` 加密快照），`storage.local` 全程保持密文；会话失效只清除密钥材料与解密快照，不做批量重加密。
 - 会话恢复后自动检测并修复加密状态不一致的数据。
-- SessionManager 每分钟检查会话有效性，页面可见性变化时也会触发检查。
+- 会话检查器 `sessionManager.ts` 的 60 秒轮询**只在 Options 页**启动（`initSessionManager()`），且只在会话从「有效 → 无效」跳变时触发过期事件；SidePanel 与 Popup 不等这个轮询，由 [useStorageWatcher.ts](../composables/useStorageWatcher.ts) 的 `visibilitychange` 监听在页面重新可见时重跑认证检查。详见「会话生命周期」。
 - **大写锁定实时提示**：主密码相关输入框（首次设置、解锁验证视图、验证弹窗、修改主密码、加密备份导入）通过 `KeyboardEvent.getModifierState('CapsLock')` 在 keydown/keyup 实时判定大写锁定状态（见 [useCapsLockDetection.ts](../composables/useCapsLockDetection.ts)），开启时在输入框下方展示琥珀色警示行（见 [CapsLockHint.vue](../components/CapsLockHint.vue)），避免大小写误输入被当成「密码错误」；提示行用 `role="status"` 让屏幕阅读器非打断播报，失焦即复位，不留残留提示。
 
 ### 2. 表单识别与填充
@@ -366,7 +366,7 @@ graph TB
 
 - 侧边栏自动将与当前域名匹配的密码排在前面。
 - **精确域名匹配**：仅展示与当前页面 host 完全一致的条目（不做子域名/主域名模糊匹配），方便区分多测试环境账号（如 `fat.example.com` 与 `uat.example.com` 互不干扰）；未填写域名的条目始终展示。
-- **本地开发友好**：当域名为 `localhost` 或 `127.0.0.1` 时，默认匹配所有密码（见 [sidepanel/App.vue](../entrypoints/sidepanel/App.vue)）。
+- **本地开发友好**：当域名为 `localhost` 或 `127.0.0.1` 时按**端口**过滤——当前页面不带端口（纯 `localhost`）时展示全部条目，带端口（如 `localhost:3000`）时只展示端口一致或本身不带端口的条目，避免 `:3000` 与 `:5173` 两个本地项目的账号混在一起（见 [domain.ts](../utils/domain.ts) 的 `matchesPortForLocalDev` / [passwordFilter.ts](../utils/passwordFilter.ts)）。
 - **网站图标展示**：密码列表与侧边栏条目展示对应网站的图标，经 Chrome 本地 `_favicon/` 端点读取浏览器图标缓存，零外部网络请求（见 [SiteFavicon.vue](../components/SiteFavicon.vue)）；无缓存图标或不支持的环境自动降级为默认图标，布局零偏移。
 - **侧边栏快速添加**：顶栏「+」就地打开快速添加弹窗（见 [QuickAddDialog.vue](../components/sidepanel/QuickAddDialog.vue)），网址自动预填当前域名；本站无账号或搜索无结果时，空态同样提供「添加本站账号」入口。弹窗只收账号 / 密码 / 网址 / 标签 / 备注五个高频字段，TOTP 等完整字段经「到密码管理中完整添加」跳到选项页录入。
 - **搜索范围切换（本站 / 全站）**：搜索框右侧图标在 `site`（默认，仅当前域名匹配 + 空 URL 通用条目）与 `all`（全库条目）之间切换，判定与过滤集中在无 Vue 依赖的纯函数 [passwordFilter.ts](../utils/passwordFilter.ts)（`matchesSiteScope` / `filterEntriesByScope`），与「能否填充当前页」共用同一判据，避免两处语义分叉；域名或端口变化时自动回到 `site`（切到同域名的其它标签页仍保留全站态）。全站模式下命中的外站条目 `canFill` 为假，整行降级为「在新标签页打开该站点」（经 [domain.ts](../utils/domain.ts) 的 `toNavigableUrl` 补默认协议并拒绝 `javascript:` 等非导航协议），但复制账号 / 密码 / 验证码、收藏、编辑仍然可用；本站无命中而全库有命中时，空态给出「在全部条目中查找（N 条）」一键切换。

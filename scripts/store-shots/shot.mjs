@@ -9,13 +9,13 @@
  * 结果可复现、无 PII，尺寸能精确落在 1280x800（@2x 输出 2560x1600）。
  */
 import sharp from 'sharp';
-import { listTargets, Session, evalIn, newTab } from './cdp.mjs';
+import { closeTab, listTargets, Session, evalIn, newTab } from './cdp.mjs';
 
-export { listTargets, Session, evalIn, newTab };
+export { closeTab, listTargets, Session, evalIn, newTab };
 
 export const W = 1280; // 画布逻辑宽（CSS px）
 export const H = 800;
-export const BAND = 124; // 顶部标题带高度（留足标题与副标题的行距）
+export const BAND = 78; // 顶部标题带高度（文字块按墨迹框上下等距，见 band()）
 export const BODY = H - BAND;
 export const PANEL_W = 380; // 侧边栏在合成图里的宽度
 export const LEFT_W = W - PANEL_W;
@@ -59,6 +59,67 @@ export async function attachTo(pred) {
 }
 
 /**
+ * 等待页面收敛到「动画结束后」的样子。
+ *
+ * 两道问题叠在一起：
+ * 1. 侧边栏必须待在**后台标签**里才能命中演示域名（它按 `active + currentWindow`
+ *    取标签，一旦置前就会把自己当目标页、退化成列出全部条目），而后台标签不跑
+ *    `requestAnimationFrame`；
+ * 2. Vue 的过渡在 nextFrame 回调里把 `*-enter-from` 换成 `*-enter-to`，回调不触发
+ *    就意味着元素永远停在 `enter-from`（`opacity: 0` + `scaleX(0)`）——**看不见，
+ *    却照常占位**，截图里就成了「网址前面凭空空出一块」。
+ *
+ * 因此先等真正在跑的动画收尾，再把残留的 enter 类摘掉，让元素回到过渡完成态。
+ */
+export async function settle(s, timeout = 3000) {
+  const deadline = Date.now() + timeout;
+  while (Date.now() < deadline) {
+    const busy = await evalIn(
+      s,
+      `(document.getAnimations ? document.getAnimations().filter((a) => a.playState === 'running' || a.playState === 'pending').length : 0)`,
+    );
+    if (!busy) break;
+    await new Promise(r => setTimeout(r, 150));
+  }
+  await new Promise(r => setTimeout(r, 250));
+  await evalIn(
+    s,
+    `(() => {
+      let cleared = 0;
+      for (const el of document.querySelectorAll('[class*="-enter-"]')) {
+        for (const c of [...el.classList]) {
+          if (/-enter-(from|to|active)$/.test(c)) {
+            el.classList.remove(c);
+            cleared++;
+          }
+        }
+      }
+      return cleared;
+    })()`,
+  );
+  // 懒加载图片在后台标签里不会被取（SiteFavicon 的图标位置因此空白），
+  // 截图前强制转成 eager 并等它们真正加载完，load/error/超时任一即放行。
+  await evalIn(
+    s,
+    `(async () => {
+      for (const img of document.querySelectorAll('img[loading="lazy"]')) img.loading = 'eager';
+      const pending = [...document.querySelectorAll('img')]
+        .filter((img) => !img.complete)
+        .map(
+          (img) =>
+            new Promise((res) => {
+              img.addEventListener('load', res, { once: true });
+              img.addEventListener('error', res, { once: true });
+              setTimeout(res, 2000);
+            }),
+        );
+      await Promise.all(pending);
+      return pending.length;
+    })()`,
+  );
+}
+
+/**
  * 固定设备指标输出。CDP 的 scale 参数实际会被忽略，像素尺寸统一在 compose()
  * 里归一，因此这里只负责给页面一个合适宽度的逻辑视口（宽一点可避免表格被裁切）。
  */
@@ -73,8 +134,63 @@ export async function metrics(s, width, height) {
 }
 
 export async function grab(s) {
+  await settle(s);
   const { data } = await s.send('Page.captureScreenshot', { format: 'png' });
   return Buffer.from(data, 'base64');
+}
+
+/** 读取 `/_favicon/` 端点返回的字节数（-1 表示非 200）。 */
+async function faviconBytes(s, pageUrl) {
+  return evalIn(
+    s,
+    `(async () => {
+      const res = await fetch(
+        chrome.runtime.getURL('/_favicon/?pageUrl=' + encodeURIComponent(${JSON.stringify(pageUrl)}) + '&size=32'),
+      );
+      if (!res.ok) return -1;
+      return (await res.arrayBuffer()).byteLength;
+    })()`,
+  );
+}
+
+/**
+ * 预热 favicon 缓存，让每个演示域名都能命中站点自己的图标。
+ *
+ * Chrome 的 favicon 缓存按 `CanonicizeURL`（清掉 path/query，但**保留 scheme 与
+ * port**）建索引，没访问过的域名只会拿到通用地球图标——「图标取自本地缓存」这个
+ * 卖点就拍不出来。因此先逐个访问一遍演示域名（demo-server.mjs 会为每个 Host 合成
+ * 不同底色的 `/favicon.png`），再按扩展页的 `/_favicon/` 返回值校验是否脱离地球基线。
+ *
+ * 校验只用于提示：个别域名没命中不阻断跑批（组件会降级渲染默认图标，不影响其余画面）。
+ *
+ * @param {string[]} hosts 需要预热的域名列表（不带协议）
+ * @param {number} [timeout] 单个域名的最长等待毫秒数
+ */
+export async function warmFavicons(hosts, timeout = 4000) {
+  const probeTab = await newTab(extUrl('options.html'));
+  await new Promise(r => setTimeout(r, 2500));
+  const { s: probe } = await attachTo(t => t.id === probeTab.id);
+  // 从未访问过的地址 = 地球图标字节数基线
+  const globe = await faviconBytes(probe, 'https://unwarmed-baseline.example/');
+
+  const missed = [];
+  for (const host of hosts) {
+    const tab = await newTab(`https://${host}/`);
+    const deadline = Date.now() + timeout;
+    let bytes = globe;
+    while (Date.now() < deadline) {
+      await new Promise(r => setTimeout(r, 400));
+      bytes = await faviconBytes(probe, `https://${host}`);
+      if (bytes > 0 && bytes !== globe) break;
+    }
+    if (bytes <= 0 || bytes === globe) missed.push(host);
+    await closeTab(tab.id);
+  }
+
+  await closeTab(probeTab.id);
+  probe.close();
+  if (missed.length) console.warn('favicon 未命中（将显示默认图标）:', missed.join(', '));
+  else console.log(`favicon 预热完成: ${hosts.length} 个域名`);
 }
 
 /**
@@ -82,17 +198,26 @@ export async function grab(s) {
  *
  * 版式要点：左侧一条品牌色竖条做视觉锚点；标题与副标题拉开行距（基线相距 34px）；
  * 标题用略柔和的近白色而非纯白，避免深色带上大面积纯白字显得生硬。
+ * 垂直位置按 CJK 墨迹框（基线上约 0.86em、下约 0.12em）而非基线居中——
+ * 按基线居中会让文字贴顶、深色带下方空出一大条。
  */
 function band(ctx) {
   const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;');
+  const TITLE_SIZE = 33;
+  const SUB_SIZE = 18;
+  const LEADING = 34; // 两行基线间距
+  const inkAbove = TITLE_SIZE * 0.86;
+  const inkBelow = LEADING + SUB_SIZE * 0.12;
+  const titleY = Math.round((BAND * 2 - inkAbove - inkBelow) / 2 + inkAbove);
+  const subY = titleY + LEADING;
   return `<svg width="${W * 2}" height="${BAND * 2}" xmlns="http://www.w3.org/2000/svg">
     <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="0">
       <stop offset="0%" stop-color="#0A1A38"/><stop offset="100%" stop-color="#123E77"/>
     </linearGradient></defs>
     <rect width="100%" height="100%" fill="url(#g)"/>
-    <rect x="56" y="40" width="5" height="44" rx="2.5" fill="#4C8DF6"/>
-    <text x="80" y="68" font-family="${FONT}" font-size="33" font-weight="600" fill="#F4F8FF">${esc(ctx.title)}</text>
-    <text x="80" y="102" font-family="${FONT}" font-size="18" fill="#93B4E4">${esc(ctx.sub)}</text>
+    <rect x="56" y="${titleY - inkAbove}" width="5" height="44" rx="2.5" fill="#4C8DF6"/>
+    <text x="80" y="${titleY}" font-family="${FONT}" font-size="${TITLE_SIZE}" font-weight="600" fill="#F4F8FF">${esc(ctx.title)}</text>
+    <text x="80" y="${subY}" font-family="${FONT}" font-size="${SUB_SIZE}" fill="#93B4E4">${esc(ctx.sub)}</text>
   </svg>`;
 }
 
