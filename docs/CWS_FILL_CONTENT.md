@@ -297,6 +297,8 @@ public/icon/128.png
 
 > ✅ **2026-09-13 重制（推荐上传这一组）**：`assets/cws-store/screen-*.png`，**中英各 14 张**，**2560×1600（即 1280×800 @2x，正好是官方规格的 2 倍）**。每张顶部为品牌渐变标题带（`#0A1A38 → #123E77`，与 Marquee / 小推广图同源；左侧一条品牌色竖条做视觉锚点），下方为界面演示，全部使用占位演示数据（`example.com` / `*.example.com`，**不含任何真实账号、真实邮箱或第三方品牌**）。
 >
+> ⬆️ **上传请取 `assets/cws-store/upload/*-1280x800.png`，不要传母版**：Dashboard 的截图槽只接受 **1280×800 或 640×400** 的 JPEG / 24 位 PNG，**带 alpha 通道的 PNG 会被判尺寸/格式无效**，而 2560×1600 的母版既是超规格、又是 RGBA 四通道。上传图由 `node scripts/store-shots/export-upload.mjs` 从母版派生（2:1 整数倍降采样 + 白底压平 alpha），中英各 14 张、单张 ≤300KB（商店单文件上限 5MB）；**母版重截后必须复跑这一步**。
+>
 > 🌐 **两套都要传**：Dashboard 上中文页与 English (United States) 页的截图槽位互相独立、不会继承。**英文版文件名带 `-en` 后缀**，而且不只是标题带翻译——界面本身也切到英文（含标签 `Dev/Staging/Prod/QA/Ops/Design/Docs/Sandbox` 与英文备注），所以英文跑批必须用全新 profile 重新 seed。
 >
 > 生成方式：脚本化截取（本地 HTTPS 演示站 + Chrome 加载 `.output/chrome-mv3` 构建 + 占位演示数据），不是人工截图。演示数据与复现步骤见下方「生成方式」。
@@ -321,6 +323,9 @@ public/icon/128.png
 > 📐 **第 12 张刻意只拍「数据管理」下拉，不拍导入弹窗**：导入弹窗的格式单选里有「Chrome 密码」这一项，属商店图片文字禁用的竞品品牌名；下拉里的九个入口（导入 / 下载模板 / 导出 / 导出 JSON / 加密备份导出 / 加密备份导入 / 备份到邮箱 / 一键去重 / 回收站）不含品牌名，且一屏覆盖导出与备份两个能力。
 >
 > ⚠️ **每个语言页的截图上限是 5 张**，上表有 14 张候选，**最终选哪 5 张由上传时定**。脚本侧建议取 `1 / 2 / 3 / 4 / 9`（前四张各占一个独立卖点，第 9、10 张是仅有的两张展示**页内**体验的构图，与其余「侧边栏 / 管理页」互补）；要换就换 `7`（收藏 + 标签 + 网站图标）、`8`（信息密度最高的详情抽屉）或 `13`（生成器面板）。**若要砍一张，先砍第 6 张**（本地加密画面最朴素，且该主张在摘要与说明里已有文字承载）。
+>
+> 📤 按上面建议上传时，中文页取这 5 个文件（English 页把 `screen-` 后同名换成 `-en-1280x800.png`）：
+> `upload/screen-1-one-click-login-1280x800.png`、`upload/screen-2-totp-1280x800.png`、`upload/screen-3-multi-env-1280x800.png`、`upload/screen-4-security-audit-1280x800.png`、`upload/screen-9-inline-fill-1280x800.png`。
 >
 > 📌 第 7、8 张依赖 `seed.mjs` 的**收藏**与**改密**步骤（详情抽屉的「密码修改历史」小节只在有条目被改过密码后才渲染），第 14 张依赖**移入回收站**步骤，只跑导入是拍不出来的。
 >
@@ -349,16 +354,19 @@ node scripts/store-shots/capture.mjs "$PWD/.output/chrome-mv3" seeded zh
 node scripts/store-shots/capture.mjs "$PWD/.output/chrome-mv3" prefs  zh
 node scripts/store-shots/capture.mjs "$PWD/.output/chrome-mv3" firstrun zh
 # 英文同上，第二个参数换成 en（演示标签也是英文，必须换全新 profile 重新 seed）
+
+# 4) 由母版派生商店真正收的尺寸（1280×800、无 alpha）→ assets/cws-store/upload/
+node scripts/store-shots/export-upload.mjs
 ```
 
 > 演示账号（中英各 **10 条**占位）内联在 `scripts/store-shots/seed.mjs` 的 `DEMO_CSV_ZH` / `DEMO_CSV_EN`，`seed.mjs` 还会收藏 2 条、把 1 条密码改两次（图 7、图 8 依赖这两步）；演示登录页 / 2FA 页为同目录的 `demo-login.html`、`demo-2fa.html`；截图与合成脚本也在该目录，完整用法（含 Chrome 启动参数、favicon 预热、自备 CSV）见其 `README.md`。
 >
 > 💡 版本徽章：脚本读取构建产物里的 `manifest.version`，所以**务必先让分支版本与即将提交的包一致**（同步到 `main` 后应为 3.9.0）再截，否则又会出现「截图版本与商店版本不符」。
-> ⚠️ **2026-09-13 这批是在 `package.json` 仍为 3.7.0 时截的，图里的徽章写的是 v3.7.0**——提交 3.9.0 前必须改版本号后重跑一遍。
+> ✅ 版本徽章已核验（2026-09-13 复核）：当前母版是合并 `main`（`package.json` 3.9.0）之后重截的一批，管理页截图里的徽章实测为 **v3.9.0**，与 `package.json` / `.output/chrome-mv3/manifest.json` 一致，可直接提交 3.9.0。图 6 是首启「设置主密码」页，**该页面本身不渲染版本徽章**，不存在徽章核对项。今后 `package.json` 再升版本，必须 `pnpm build` → 重跑 `capture.mjs` → 重跑 `export-upload.mjs`，否则又会出现「截图版本与商店版本不符」。
 
-> 📐 **尺寸对照**：新一组是官方规格的精确 2 倍（1280×800 @2x = 2560×1600），不会触发尺寸校验。`assets/screenshots/` 里的旧 12 张是 2880×1598~1610（约 16:9），既非官方比例、版本也已过期。
+> 📐 **尺寸对照**：新一组母版是官方规格的精确 2 倍（1280×800 @2x = 2560×1600），`export-upload.mjs` 按 2:1 降采样即得官方尺寸；母版本身仍用于 `index.html` 与 README（高清显示更锐利），**商店截图槽取 `upload/` 里的 1280×800 版**。`assets/screenshots/` 里的旧 12 张是 2880×1598~1610（约 16:9），既非官方比例、版本也已过期。
 >
-> ⚠️ `assets/cws-store/` 除新的 18 张（9 中文 + 9 英文）外，仍有旧素材：`01-*.png` ~ `08-*.png`（v2.12.0，**含真实账号邮箱，勿再上传**）、`store-icon-128x128.png`、四张推广图（`marquee-1400x560.png` / `marquee-en-1400x560.png` / `small-promo-440x280.png` / `small-promo-en-440x280.png`）。上传截图时只取 `screen-*.png`。
+> ⚠️ `assets/cws-store/` 除新的 28 张母版（14 中文 + 14 英文）与 `upload/` 下对应的 28 张上传图外，仍有旧素材：`01-*.png` ~ `08-*.png`（v2.12.0，**含真实账号邮箱，勿再上传**）、`store-icon-128x128.png`、四张推广图（`marquee-1400x560.png` / `marquee-en-1400x560.png` / `small-promo-440x280.png` / `small-promo-en-440x280.png`）。上传截图时只取 `upload/*-1280x800.png`。
 
 ### 小幅推广图片 (Small Promo Tile) — 440×280
 
@@ -402,7 +410,9 @@ assets/cws-store/marquee-en-1400x560.png       # English (United States) 语言�
 > GitHub 用户名、实时 TOTP 活码和已登录的业务面板，属于凭据泄露素材。
 > **2026-09-13 已重录**：`docs/demo-login.webp` / `demo-login-en.webp` / `demo-login.gif`
 > 现由 `scripts/store-shots/record.mjs` 从占位演示页生成（`example.com` 数据），
-> README 首屏已换回动图。**唯独 `docs/demo-login.mp4` 仍是旧真机录屏，不得引用。**
+> README 首屏已换回动图；同一天补录了两步验证接力动图
+> `docs/demo-totp.webp` / `demo-totp-en.webp` / `demo-totp.gif`，同样全部是占位数据。
+> **唯独 `docs/demo-login.mp4` 仍是旧真机录屏，不得引用。**
 > **今后任何截图与录屏一律基于 `scripts/store-shots/` 的占位演示页**
 > （`demo-login.html` / `demo-2fa.html` + `example.com` 数据），不要录制真实账号画面。
 
@@ -415,17 +425,26 @@ assets/cws-store/marquee-en-1400x560.png       # English (United States) 语言�
 | 宽度     | 800–1000px                                                                                                                                                                                             |
 | 文件大小 | ≤ 5MB（可用 [ezgif.com](https://ezgif.com) 或 `ffmpeg` 压缩）                                                                                                                                          |
 | 存放位置 | `docs/demo-login.gif`（900px 宽，推广文档引用）+ `docs/demo-login.webp` / `docs/demo-login-en.webp`（1152×720，README 首屏）                                                                           |
-| 录制工具 | `node scripts/store-shots/record.mjs "$PWD/.output/chrome-mv3" zh\|en`——CDP 驱动本地 Chrome 走扩展真实填充链路取关键帧，再合成品牌标题带                                                               |
+| 录制工具 | `node scripts/store-shots/record.mjs "$PWD/.output/chrome-mv3" zh\|en login`——CDP 驱动本地 Chrome 走扩展真实填充链路取关键帧，再合成品牌标题带                                                         |
 | 压缩命令 | 由 `record.mjs` 内部调用 `ffmpeg` 完成（webp：`-fps_mode passthrough -c:v libwebp -quality 72`；gif：`palettegen=stats_mode=diff` + `paletteuse`）                                                     |
 
 **GIF 2：TOTP 两步验证接力（加分）**
 
-| 项目     | 要求                                                                                     |
-| -------- | ---------------------------------------------------------------------------------------- |
-| 内容脚本 | GitHub 登录 → 密码自动填充 → 跳转验证码页 → 活码胶囊自动锚定 → 一键填入验证码 → 登录成功 |
-| 时长     | 15–20 秒                                                                                 |
-| 规格     | 同上                                                                                     |
-| 存放位置 | `docs/demo-totp.gif`（推广文章配图用；**尚未录制**，与 GIF 1 一并从占位演示页录制）      |
+| 项目     | 要求                                                                                                                                                                                                                                   |
+| -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 内容脚本 | 登录页唤起**页内填充面板** → 方向键 + 回车选中条目（账号密码自动填充、「记住我」自动勾选）→ 点登录进入受理中 → **同一标签页**跳验证码页 → 活码胶囊自动锚定到输入框右内缘 → 点「填入页面验证码输入框」→ 动态码进框 → 点 Verify 验证成功 |
+| 时长     | 6 个关键帧、1.5/1.4/1.3/2.2/1.6/2.1 秒，一轮约 10 秒                                                                                                                                                                                   |
+| 宽度     | 800–1000px（当前产出 900px 宽 gif）                                                                                                                                                                                                    |
+| 文件大小 | ≤ 5MB（当前 `docs/demo-totp.gif` 约 160KB）                                                                                                                                                                                            |
+| 存放位置 | `docs/demo-totp.gif`（推广文章配图）+ `docs/demo-totp.webp` / `docs/demo-totp-en.webp`（1152×720）                                                                                                                                     |
+| 录制工具 | `node scripts/store-shots/record.mjs "$PWD/.output/chrome-mv3" zh\|en totp`——与 GIF 1 同一套流水线，只是换了场景参数                                                                                                                   |
+| 画面口径 | 站点 `console.example.com`、条目 `ops@example.com`（占位 TOTP 密钥），全部 `example.com` 数据，不含真实凭据                                                                                                                            |
+
+> **为什么第一阶段的填充走页内面板而不是侧边栏**：接力标记 `SET_PENDING_TOTP` 受
+> `isTrustedInternalSender` 门控（要求 `sender.tab === undefined`），真侧边栏满足，但自动化
+> 流水线只能把 `sidepanel.html` 开成标签页，消息会被判为未授权来源。页内面板走
+> `FILL_BY_ID`，由内容脚本发起、不经该门控，同样会记录接力标记，因此整条链路都是扩展自身
+> 的真实行为，没有为拍图伪造任何状态。
 
 **录制注意事项**
 
@@ -786,7 +805,7 @@ No specific website accounts are required. The extension treats all websites uni
 - [ ] 商店 Name 与 `public/_locales/*/messages.json` 的 `extensionName` 逐字一致（中英文均是）
 - [ ] 分类选择 Productivity
 - [ ] 商店图标已上传（128×128）
-- [ ] 截图已上传（**中文页与 English (United States) 页各 5 张**，从 `assets/cws-store/screen-*.png` 的 14 张候选里选；**不要再用旧的 `01-*.png` ~ `12-*.png`**）
+- [ ] 截图已上传（**中文页与 English (United States) 页各 5 张**，从 `assets/cws-store/upload/*-1280x800.png` 的 14 张候选里选，英文页取 `-en-` 那一套；**不要传 2560×1600 母版、也不要再用旧的 `01-*.png` ~ `12-*.png`**）
 - [ ] 截图版本徽章与提交包一致（**当前批次徽章为 v3.9.0**，与 `package.json` / `manifest` 同源；改版本后必须 `pnpm build` 并重跑 `scripts/store-shots/`）
 - [ ] Marquee 宣传图（1400×560）已上传
 - [ ] Small Promo Tile（440×280）已上传
@@ -809,7 +828,7 @@ No specific website accounts are required. The extension treats all websites uni
 - [ ] 英文语言版本已添加（Languages → English）
 - [ ] Marquee 宣传图（1400×560）已在商店上传
 - [ ] Small Promo Tile（440×280）已在商店上传
-- [x] 演示 GIF 已制作（`docs/demo-login.gif` + `docs/demo-login{,-en}.webp`，2026-09-13 由 `record.mjs` 从占位演示页重录，不含真实凭据）
+- [x] 演示 GIF 已制作（`docs/demo-login.gif` + `docs/demo-login{,-en}.webp`，以及两步验证接力 `docs/demo-totp.gif` + `docs/demo-totp{,-en}.webp`，2026-09-13 由 `record.mjs` 从占位演示页录制，不含真实凭据）
 - [ ] 7.2 英文提名文案已逐字段粘贴到 One Stop Support 表单
 - [ ] 插件 ID（`fgimkdodpjfkddmildjieojpfakpanli`）与联系邮箱已填写
 - [ ] 提交后记录日期（6 个月内不可重复提名）

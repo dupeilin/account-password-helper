@@ -58,6 +58,12 @@ A **free, open-source** local Chrome password manager: **one-click login** that 
     </td>
   </tr>
   <tr>
+    <td colspan="2" align="center">
+      <img src="./docs/demo-totp-en.webp" alt="Two-factor handoff demo: fill and sign in from the in-page panel, the live code capsule anchors on the code page, one click drops the code into the input" width="62%" /><br />
+      <sub><b>Two-factor handoff</b> — pick the account in the in-page panel, sign in, and the live-code capsule anchors itself beside the code field on the next page; one tap fills it in</sub>
+    </td>
+  </tr>
+  <tr>
     <td width="50%" align="center">
       <img src="./assets/cws-store/screen-3-multi-env-en.png" alt="Per-environment accounts: dev, staging and production entries for one site separated by tags" width="100%" /><br />
       <sub><b>Per-environment isolation</b> — several accounts for the same site, tagged Dev / Staging / Prod, filled by exact host match</sub>
@@ -79,7 +85,7 @@ A **free, open-source** local Chrome password manager: **one-click login** that 
   </tr>
 </table>
 
-> 📸 The shots above come from the store asset set and use placeholder demo data. The full one-click login sequence is in the demo animation above; more screens (inline fill panel, floating button, CSV import/export) are on the [live demo page](https://liaolongdong.github.io/account-password-helper/en.html).
+> 📸 The shots and animations above come from the store asset pipeline (`scripts/store-shots/`) and use placeholder demo data. More screens (inline fill panel, floating button, CSV import/export) are on the [live demo page](https://liaolongdong.github.io/account-password-helper/en.html).
 
 ## How It Compares
 

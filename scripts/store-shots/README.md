@@ -1,9 +1,12 @@
 # 商店截图流水线（store-shots）
 
 用脚本生成 Chrome 应用商店的产品截图，**中英各一套、每套 14 张**，输出到
-`assets/cws-store/screen-*.png`（2560×1600 = 1280×800 @2x）。
-同一套脚本还负责 README 首屏的「一键登录」动图，输出到 `docs/demo-login*.webp`
-与 `docs/demo-login.gif`（见下文「README 首屏动图」）。
+`assets/cws-store/screen-*.png`（2560×1600 = 1280×800 @2x）；母版再经
+`export-upload.mjs` 派生出商店截图槽实际接受的 1280×800 无 alpha 版本，输出到
+`assets/cws-store/upload/`（见下文「上传尺寸」）。
+同一套脚本还负责两个演示动图（`record.mjs` 的 `login` / `totp` 两个场景），输出到
+`docs/demo-login*.webp`、`docs/demo-login.gif` 与 `docs/demo-totp*.webp`、
+`docs/demo-totp.gif`（见下文「演示动图」）。
 
 Dashboard 里中文页与 English (United States) 页的截图槽位**互相独立、不会继承**，
 所以两套都要上传；英文版文件名带 `-en` 后缀。
@@ -59,7 +62,8 @@ PROFILE="$(mktemp -d)"
 node scripts/store-shots/seed.mjs    "$PWD/.output/chrome-mv3" zh   # 首次运行会设主密码 + 导入 10 条 + 收藏 2 条 + 轮换 1 条密码
 node scripts/store-shots/capture.mjs "$PWD/.output/chrome-mv3" seeded    zh
 node scripts/store-shots/capture.mjs "$PWD/.output/chrome-mv3" prefs     zh
-node scripts/store-shots/record.mjs  "$PWD/.output/chrome-mv3" zh        # README 首屏动图（webp + gif）
+node scripts/store-shots/record.mjs  "$PWD/.output/chrome-mv3" zh login  # 一键登录动图（webp + gif）
+node scripts/store-shots/record.mjs  "$PWD/.output/chrome-mv3" zh totp   # 两步验证接力动图（webp + gif）
 # 换全新 profile 重新起 Chrome，再跑：
 node scripts/store-shots/capture.mjs "$PWD/.output/chrome-mv3" firstrun  zh
 
@@ -67,7 +71,8 @@ node scripts/store-shots/capture.mjs "$PWD/.output/chrome-mv3" firstrun  zh
 node scripts/store-shots/seed.mjs    "$PWD/.output/chrome-mv3" en
 node scripts/store-shots/capture.mjs "$PWD/.output/chrome-mv3" seeded    en
 node scripts/store-shots/capture.mjs "$PWD/.output/chrome-mv3" prefs     en
-node scripts/store-shots/record.mjs  "$PWD/.output/chrome-mv3" en        # README 首屏动图（webp）
+node scripts/store-shots/record.mjs  "$PWD/.output/chrome-mv3" en login  # 一键登录动图（webp）
+node scripts/store-shots/record.mjs  "$PWD/.output/chrome-mv3" en totp   # 两步验证接力动图（webp）
 node scripts/store-shots/capture.mjs "$PWD/.output/chrome-mv3" firstrun  en
 ```
 
@@ -97,8 +102,8 @@ node scripts/store-shots/capture.mjs "$PWD/.output/chrome-mv3" autosave en
 标题带文案的合规约束与商店四个字段完全一致：**零竞品品牌名、零绝对化表述**
 （不得写「零联网 / 100% offline / 数据不出浏览器」——扩展每 6 小时有一次
 不携带用户数据的匿名版本检查）。改文案后重跑 `capture.mjs` 即可，文案表在
-`copy.mjs`（中英各一份，`capture.mjs` 与 `record.mjs` 共用），动图用的就是其中
-`login` 一条，改了要一并重跑 `record.mjs`。
+`copy.mjs`（中英各一份，`capture.mjs` 与 `record.mjs` 共用），两个动图分别取其中
+`login` 与 `handoff` 一条，改了要一并重跑 `record.mjs`。
 
 | 文件（英文加 `-en`）            | 卖点           | 标题带（中文）                                           |
 | ------------------------------- | -------------- | -------------------------------------------------------- |
@@ -130,15 +135,37 @@ node scripts/store-shots/capture.mjs "$PWD/.output/chrome-mv3" autosave en
 > 最高）与 `screen-13`（生成器面板）是首选替补；`screen-6`（本地加密）画面最朴素、
 > 且该主张在摘要与说明里已有文字承载，最先可舍弃。
 
-## README 首屏动图
+## 上传尺寸（1280×800）
+
+Dashboard 的截图槽只接受 **1280×800 或 640×400** 的 JPEG / 24 位 PNG，**带 alpha 通道的
+PNG 会被判格式无效**。母版是 2560×1600 的 RGBA，直接上传会失败，所以要派生一份上传图：
 
 ```bash
-node scripts/store-shots/record.mjs "$PWD/.output/chrome-mv3" zh   # docs/demo-login.webp + docs/demo-login.gif
-node scripts/store-shots/record.mjs "$PWD/.output/chrome-mv3" en   # docs/demo-login-en.webp
+node scripts/store-shots/export-upload.mjs   # → assets/cws-store/upload/screen-*-1280x800.png
+```
+
+母版逻辑尺寸本来就是 1280×800（`deviceScaleFactor: 2`），所以这一步是严格的 2:1
+整数倍降采样，不存在非整数重采样把小字糊掉的问题；alpha 用白底压平，输出 3 通道 PNG。
+中英各 14 张全部导出（约 5.8MB，单张 ≤300KB，商店单文件上限 5MB），上传时任选 5 张。
+
+- **重截母版后要复跑这一步**，否则 `upload/` 与母版不同步。
+- 脚本对母版尺寸做了断言：不是 2560×1600 就报错中止，不静默产出比例失真的素材。
+- 官网 `index.html` 与 README 继续引用高清母版，**只有商店截图槽取 `upload/`**。
+
+## 演示动图
+
+```bash
+node scripts/store-shots/record.mjs "$PWD/.output/chrome-mv3" zh login  # docs/demo-login.webp + docs/demo-login.gif
+node scripts/store-shots/record.mjs "$PWD/.output/chrome-mv3" zh totp   # docs/demo-totp.webp + docs/demo-totp.gif
+node scripts/store-shots/record.mjs "$PWD/.output/chrome-mv3" en login  # docs/demo-login-en.webp
+node scripts/store-shots/record.mjs "$PWD/.output/chrome-mv3" en totp   # docs/demo-totp-en.webp
 ```
 
 前置与 `capture.mjs` 相同（演示站在跑、Chrome 已启动、**同一 profile 已按同一语言
-seed**）。英文必须换全新 profile 重新 seed，否则动图里混着中文标签。
+seed**）。英文必须换全新 profile 重新 seed，否则动图里混着中文标签。gif 只在中文批
+产出（推广文档引用 `.gif` 路径），英文只出 webp。
+
+### `login`：一键登录（侧边栏）
 
 四个关键帧都是扩展自己的真实链路，脚本不代填任何字段：空白登录页 + 侧边栏命中本站
 3 个账号 → 光标落到「填充并登录」图标 → 点击之后（填充、自动勾选「记住我」、自动点击
@@ -146,30 +173,58 @@ seed**）。英文必须换全新 profile 重新 seed，否则动图里混着中
 **填充成功后产品会自己收起侧边栏**（`FormDetector` 在填充成功 300ms 后发
 `HIDE_SIDEPANEL`），双栏构图到那里就散了。
 
+### `totp`：两步验证接力（页内填充面板）
+
+六帧全部整幅构图（面板本就注入在页面里，收起后又回到一张干净的登录页），站点是
+`console.example.com`，条目是带 TOTP 密钥的 `ops@example.com`：页内面板展开 →
+方向键 + 回车选中（账号密码由扩展填入）→ 点 Sign in 进 `Signing in...` →
+**同一标签页**跳 `demo-2fa.html`，扩展把活码胶囊锚到验证码框右内缘 → 点胶囊「填入」
+→ 点 Verify 出 `Verified · demo environment`。
+
+- **为什么这一条不走侧边栏**：接力标记 `SET_PENDING_TOTP` 受
+  `isTrustedInternalSender` 门控，该判定要求 `sender.tab === undefined`。真侧边栏满足
+  （它不是标签页），但流水线只能把 `sidepanel.html` 开成标签页，消息会被判「未授权的
+  请求来源」（同一门控也拒掉了 `GET_INITIAL_DATA`）。页内面板走 `FILL_BY_ID`，由内容
+  脚本发起、不经该门控，`handleFillById` 在填充成功且条目有 TOTP 时同样记录接力标记
+  ——**不需要为了拍图伪造任何扩展状态**。
+- **必须复用同一个标签页**：`pending_totp_tabs` 按 tabId + hostname 精确比对，新开标签
+  不命中，所以帧 4 用 `Page.navigate` 而不是 `newTab`。
+- **胶囊在 closed Shadow DOM 里**，页面 JS 取不到内部节点，`elementFromPoint` 只会重定向
+  到宿主 `aph-totp-handoff-root`。落点靠沿验证码框中线从右往左扫出胶囊右缘 R，再按固定
+  版式回推「填入」按钮中心（R−34）；重试偏移只往左试（−38 / −30），绝不往右滑进关闭
+  按钮——关掉后本页生命周期内不再提示，这条素材就废了。
+- **面板是否真的展开**同样不能查宿主是否存在（触发图标与面板共用一个宿主），改为只扫
+  输入框**下方**区域命中点数。
+
+### 两批共用的坑
+
 - **为什么是关键帧而不是逐帧录屏**：页面级 CDP 抓不到系统指针，而侧边栏作为标签页处于
   后台时不产出动画帧。点击落点由合成阶段叠加的光标表示，坐标取自被点元素的
   `getBoundingClientRect()`。
-- **`?demo=status`**：演示页只在带这个查询参数时渲染登录状态条（`Signing in...` →
-  `Signed in · demo environment`）。不带参数时卡片高度不变，`screen-1` 与 `screen-11`
+- **`?demo=status`**：演示页只在带这个查询参数时渲染状态条（`Signing in...` →
+  `Signed in · demo environment`；验证码页是 `Verifying...` → `Verified · demo
+environment`）。不带参数时卡片高度不变，`screen-1`、`screen-2` 与 `screen-11`
   的版式不受影响。
-- **帧停留时长**：`1.4 / 1.2 / 2 / 2.4` 秒，一轮约 7 秒，改 `record.mjs` 的 `HOLDS`。
+- **帧停留时长**：`login` 为 `1.4 / 1.2 / 2 / 2.4` 秒（一轮约 7 秒），`totp` 为
+  `1.5 / 1.4 / 1.3 / 2.2 / 1.6 / 2.1` 秒（一轮约 10 秒），改 `record.mjs` 的 `SCENES`。
 - **ffmpeg 两个坑**：concat 清单最后一行要重复一次末帧，否则末帧时长塌成 40ms；
   webp 必须 `-fps_mode passthrough`，否则帧率被重采样、节奏全乱。
 
 ## 文件
 
-| 文件              | 作用                                                                          |
-| ----------------- | ----------------------------------------------------------------------------- |
-| `cdp.mjs`         | 极简 Chrome DevTools Protocol 客户端（原生 WebSocket）                        |
-| `shot.mjs`        | 加载扩展、设备指标、等待动画收敛、截图、合成标题带、favicon 预热              |
-| `demo-hosts.mjs`  | 演示域名清单与页面地址构造（seed 条目网址 / 预热 / 截图共用一份）             |
-| `demo-server.mjs` | 本地 HTTPS 演示站：托管演示页并按 Host 合成站点图标（证书落在临时目录）       |
-| `seed.mjs`        | 切语言 + 设主密码 + 导入 10 条占位账号 + 收藏 + 改密码造历史（可传自备 CSV）  |
-| `capture.mjs`     | 截图入口，`seeded` / `prefs` / `firstrun` 三种模式 × `zh` / `en`              |
-| `record.mjs`      | README 首屏动图入口，四个关键帧 → `docs/demo-login*.webp` / `.gif`            |
-| `copy.mjs`        | 标题带文案表（中英各一份），`capture.mjs` 与 `record.mjs` 共用                |
-| `demo-login.html` | 演示登录页（「一键登录」的已填充 + 已勾选状态；状态条由 `?demo=status` 开启） |
-| `demo-2fa.html`   | 演示两步验证页（配合侧边栏活码展示「验证码和密码在一起」）                    |
+| 文件                | 作用                                                                           |
+| ------------------- | ------------------------------------------------------------------------------ |
+| `cdp.mjs`           | 极简 Chrome DevTools Protocol 客户端（原生 WebSocket）                         |
+| `shot.mjs`          | 加载扩展、设备指标、等待动画收敛、截图、合成标题带、favicon 预热               |
+| `demo-hosts.mjs`    | 演示域名清单与页面地址构造（seed 条目网址 / 预热 / 截图共用一份）              |
+| `demo-server.mjs`   | 本地 HTTPS 演示站：托管演示页并按 Host 合成站点图标（证书落在临时目录）        |
+| `seed.mjs`          | 切语言 + 设主密码 + 导入 10 条占位账号 + 收藏 + 改密码造历史（可传自备 CSV）   |
+| `capture.mjs`       | 截图入口，`seeded` / `prefs` / `firstrun` 三种模式 × `zh` / `en`               |
+| `export-upload.mjs` | 把 `screen-*.png` 母版派生成商店收的 1280×800 无 alpha 图，输出到 `upload/`    |
+| `record.mjs`        | 演示动图入口，`login`（4 帧）/ `totp`（6 帧）两场景 → `docs/demo-*.{webp,gif}` |
+| `copy.mjs`          | 标题带文案表（中英各一份），`capture.mjs` 与 `record.mjs` 共用                 |
+| `demo-login.html`   | 演示登录页（「一键登录」的已填充 + 已勾选状态；状态条由 `?demo=status` 开启）  |
+| `demo-2fa.html`     | 演示两步验证页（`screen-2` 的活码展示；`totp` 动图的接力目标页）               |
 
 演示账号内联在 `seed.mjs` 的 `DEMO_CSV_ZH` / `DEMO_CSV_EN`，各 **10 条**、行序严格一致
 （两个商店页演示的是同一批账号）：覆盖开发 / 预发 / 生产 / 测试 / 运维 / 设计 / 文档 /

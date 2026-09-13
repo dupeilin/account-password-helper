@@ -19,6 +19,10 @@ export const COPY = {
       title: 'TOTP 两步验证：验证码和密码住在一起，不用摸手机',
       sub: '扫码或上传图片即可添加密钥，动态码在本机按 RFC 6238 生成',
     },
+    handoff: {
+      title: '两步验证接力：跳到验证码页，活码胶囊自动跟上',
+      sub: '页内面板选账号 → 验证码页自动锚定活码胶囊 → 点「填入页面验证码输入框」',
+    },
     audit: {
       title: '离线安全体检：0-100 分给密码健康打分，全程本机计算',
       sub: '复用 / 弱密码 / 常见泄露 / 长期未更新四维加权，不联网',
@@ -77,6 +81,10 @@ export const COPY = {
     totp: {
       title: 'TOTP two-factor: codes live right next to the passwords',
       sub: 'Add a key by scanning a QR code or uploading an image; codes are generated on your device per RFC 6238',
+    },
+    handoff: {
+      title: 'Two-factor handoff: the live code follows you to the code page',
+      sub: 'Pick the account in the in-page panel, then click "Fill the page code input" on the capsule',
     },
     audit: {
       title: 'Offline security audit: a 0-100 score for password health',

@@ -58,6 +58,12 @@
     </td>
   </tr>
   <tr>
+    <td colspan="2" align="center">
+      <img src="./docs/demo-totp.webp" alt="两步验证接力演示：页内面板填充登录、跳到验证码页后活码胶囊自动跟上、点一下把动态码填进输入框" width="62%" /><br />
+      <sub><b>两步验证接力</b> — 页内面板选中账号 → 填充登录 → 同域名验证码页自动锚定活码胶囊 → 点「填入」把动态码填进输入框，全程不用摸手机</sub>
+    </td>
+  </tr>
+  <tr>
     <td width="50%" align="center">
       <img src="./assets/cws-store/screen-3-multi-env.png" alt="多环境账号管理：同一站点的开发、测试、生产账号用标签分开" width="100%" /><br />
       <sub><b>多环境隔离</b> — 同一站点存多套账号，按标签区分开发 / 测试 / 生产，填充时按域名精确匹配</sub>
@@ -79,7 +85,7 @@
   </tr>
 </table>
 
-> 📸 以上截图取自商店素材（占位演示数据）。一键登录的完整动作见上方演示动图；内联填充迷你面板、页面悬浮按钮、CSV 导入导出等更多界面见[在线演示页面](https://liaolongdong.github.io/account-password-helper/)。
+> 📸 以上截图与动图取自商店素材流水线（`scripts/store-shots/`，占位演示数据）。内联填充迷你面板、页面悬浮按钮、CSV 导入导出等更多界面见[在线演示页面](https://liaolongdong.github.io/account-password-helper/)。
 
 ## 横向对比
 

@@ -101,6 +101,16 @@
         border-radius: 9px;
         cursor: pointer;
       }
+      .status {
+        margin: 18px 0 0;
+        padding: 10px 12px;
+        font-size: 13px;
+        color: #14532d;
+        text-align: center;
+        background: #ecfdf5;
+        border: 1px solid #a7f3d0;
+        border-radius: 9px;
+      }
       .foot {
         margin-top: 22px;
         text-align: center;
@@ -131,7 +141,33 @@
         <button type="submit">Verify</button>
       </form>
 
+      <p
+        class="status"
+        id="status"
+        role="status"
+        hidden
+      ></p>
+
       <div class="foot">example.com · demo page for screenshots</div>
     </main>
+
+    <script>
+      // 仅在 ?demo=status 时启用：提交后显示验证状态，供两步验证接力动图收尾。
+      // 默认不开启——商店截图 screen-2 要保持原样，这个元素一出现会把卡片撑高。
+      if (new URLSearchParams(location.search).get('demo') === 'status') {
+        document.querySelector('form').addEventListener('submit', () => {
+          const el = document.getElementById('status');
+          el.hidden = false;
+          if (!/^\d{6}$/.test(document.getElementById('code').value)) {
+            el.textContent = 'Enter the 6-digit code';
+            return;
+          }
+          el.textContent = 'Verifying...';
+          setTimeout(() => {
+            el.textContent = 'Verified · demo environment';
+          }, 2200);
+        });
+      }
+    </script>
   </body>
 </html>
