@@ -424,7 +424,7 @@ assets/cws-store/marquee-en-1400x560.png       # English (United States) 语言�
 | 时长     | 7–15 秒（当前实现为 4 个关键帧、1.4/1.2/2/2.4 秒，一轮约 7 秒）                                                                                                                                        |
 | 宽度     | 800–1000px                                                                                                                                                                                             |
 | 文件大小 | ≤ 5MB（可用 [ezgif.com](https://ezgif.com) 或 `ffmpeg` 压缩）                                                                                                                                          |
-| 存放位置 | `docs/demo-login.gif`（900px 宽，推广文档引用）+ `docs/demo-login.webp` / `docs/demo-login-en.webp`（1152×720，README 首屏）                                                                           |
+| 存放位置 | `docs/demo-login.gif`（900px 宽，推广文档引用）+ `docs/demo-login.webp` / `docs/demo-login-en.webp`（1152×720，README 功能演示动画位）                                                                 |
 | 录制工具 | `node scripts/store-shots/record.mjs "$PWD/.output/chrome-mv3" zh\|en login`——CDP 驱动本地 Chrome 走扩展真实填充链路取关键帧，再合成品牌标题带                                                         |
 | 压缩命令 | 由 `record.mjs` 内部调用 `ffmpeg` 完成（webp：`-fps_mode passthrough -c:v libwebp -quality 72`；gif：`palettegen=stats_mode=diff` + `paletteuse`）                                                     |
 
@@ -436,7 +436,7 @@ assets/cws-store/marquee-en-1400x560.png       # English (United States) 语言�
 | 时长     | 6 个关键帧、1.5/1.4/1.3/2.2/1.6/2.1 秒，一轮约 10 秒                                                                                                                                                                                   |
 | 宽度     | 800–1000px（当前产出 900px 宽 gif）                                                                                                                                                                                                    |
 | 文件大小 | ≤ 5MB（当前 `docs/demo-totp.gif` 约 160KB）                                                                                                                                                                                            |
-| 存放位置 | `docs/demo-totp.gif`（推广文章配图）+ `docs/demo-totp.webp` / `docs/demo-totp-en.webp`（1152×720）                                                                                                                                     |
+| 存放位置 | `docs/demo-totp.gif`（推广文章配图）+ `docs/demo-totp.webp` / `docs/demo-totp-en.webp`（1152×720，README 首屏）                                                                                                                        |
 | 录制工具 | `node scripts/store-shots/record.mjs "$PWD/.output/chrome-mv3" zh\|en totp`——与 GIF 1 同一套流水线，只是换了场景参数                                                                                                                   |
 | 画面口径 | 站点 `console.example.com`、条目 `ops@example.com`（占位 TOTP 密钥），全部 `example.com` 数据，不含真实凭据                                                                                                                            |
 

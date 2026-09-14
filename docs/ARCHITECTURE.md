@@ -381,7 +381,7 @@ graph TB
   - `Ctrl+Shift+L` / `Cmd+Shift+L`：显示/隐藏侧边栏
   - `Ctrl+Shift+F` / `Cmd+Shift+F`：一键填充当前页面账号密码（无需打开侧边栏，直接填充与侧边栏列表首条一致的条目；多条匹配时通知告知填充了哪条，填充结果通过桌面通知 + 工具栏角标双通道反馈，见 [quickFillHandler.ts](../entrypoints/background/quickFillHandler.ts)）
   - `Ctrl+Shift+K` / `Cmd+Shift+K`：在当前页面的密码输入框内展开内联填充下拉面板（等价于点击输入框内的钥匙图标，见第 17 节）
-  - 快捷键**不可在扩展内改键**（Chrome 无 `commands.update()`），需到 `chrome://extensions/shortcuts` 修改，详见 [README - 常见问题](../README.md#常见问题)
+  - 快捷键**不可在扩展内改键**（Chrome 无 `commands.update()`），需到 `chrome://extensions/shortcuts` 修改，详见 [README - 常见问题](../README.md#-常见问题)
   - **统一一览与未生效预警**：Chrome `commands` API 仅提供 `getAll()` / `onCommand`，扩展无法自行改键（`commands.update()` 属 Firefox）。因此 Popup、密码管理页「安全设置 → 快捷键」（见 [ShortcutSettingDialog.vue](../components/options/ShortcutSettingDialog.vue)）与侧边栏帮助弹窗（见 [HelpDialog.vue](../components/sidepanel/HelpDialog.vue)）三处均展示只读一览，并对 `getAll()` 返回空 `shortcut` 的命令明确标注「未生效」（多因被系统或其他扩展占用，或更新后新增命令未自动绑定），解决「按了没反应」无从排查的痛点；命令清单单一事实来源为 [shortcutCommands.ts](../utils/shortcutCommands.ts)，与 manifest 的一致性由 [shortcutCommands.test.ts](../tests/utils/shortcutCommands.test.ts) 静态校验
 - Background 维护密码缓存，侧边栏优先读取缓存，后台异步验证。
 - **收藏/最近使用的元数据回写走委托 + 合并**：侧边栏点击收藏或填充后只在内存标记该条目（`favorite` / `favoriteUsedAt` / `lastUsedAt`）并立即更新 UI，再委托 Background 经 `UPDATE_PASSWORD_METADATA` 落盘；后台按 1500ms 去抖合并批量写入，避免连续操作打满磁盘 IO。落盘产生的 `storage.onChanged` 回声由 `storage.session` 中的 `metadata_flush_at` 标记（TTL 3000ms）识别并跳过缓存失效，防止「自己的写入把自己的缓存打掉」的抖动（见 [utils/storage/passwordCrud.ts](../utils/storage/passwordCrud.ts) 与 [passwordCache.ts](../entrypoints/background/passwordCache.ts)）。
