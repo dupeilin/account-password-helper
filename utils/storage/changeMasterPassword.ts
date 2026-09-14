@@ -35,8 +35,17 @@ const _getSessionManager = lazyImport(() => import('@/utils/sessionManager-stora
  * @throws 旧密码验证失败或 rekey 过程中任何错误
  */
 export async function changeMasterPassword(oldPassword: string, newPassword: string): Promise<void> {
+  // 口令归一化唯一入口：必须与 setMasterPassword / verifyMasterPassword 的 trim 口径一致。
+  // 若此处不 trim，落盘的校验值由「带空格的密码」派生，而解锁时输入会被 trim，
+  // 二者永远比对不上 —— 全库锁死。
+  const oldPw = String(oldPassword || '').trim();
+  const newPw = String(newPassword || '').trim();
+  if (!newPw) {
+    throw Object.assign(new Error('密码不能为空'), { code: 'EMPTY_PASSWORD' });
+  }
+
   // 1. 验证旧密码
-  const isValid = await verifyMasterPassword(oldPassword);
+  const isValid = await verifyMasterPassword(oldPw);
   if (!isValid) {
     throw Object.assign(new Error('当前密码验证失败'), { code: 'WRONG_PASSWORD' });
   }
@@ -44,7 +53,7 @@ export async function changeMasterPassword(oldPassword: string, newPassword: str
   const enc = await _getEncryption();
 
   // 2. 派生旧数据密钥
-  const oldKey = await enc.deriveEncryptionKey(oldPassword);
+  const oldKey = await enc.deriveEncryptionKey(oldPw);
 
   // 3. 读取三块密文数据
   const rawPasswords = await getAllPasswordsRaw();
@@ -86,7 +95,7 @@ export async function changeMasterPassword(oldPassword: string, newPassword: str
   }
 
   // 7. 派生新数据密钥
-  const newKey = await enc.deriveEncryptionKey(newPassword);
+  const newKey = await enc.deriveEncryptionKey(newPw);
 
   // 8. 用新密钥重新加密所有数据
   const reEncryptedPasswords: EncryptedPasswordEntry[] = [];
@@ -115,7 +124,7 @@ export async function changeMasterPassword(oldPassword: string, newPassword: str
   const masterPwResult = await chrome.storage.local.get(STORAGE_KEYS.MASTER_PASSWORD);
   const existingConfig = masterPwResult[STORAGE_KEYS.MASTER_PASSWORD] as MasterPasswordConfig;
   const existingSalt = existingConfig.salt;
-  const newVerifierHash = await enc.deriveVerifierHash(newPassword, existingSalt);
+  const newVerifierHash = await enc.deriveVerifierHash(newPw, existingSalt);
 
   // 10. 准备新会话密钥材料（rekey）
   // salt 未变，步骤 7 派生的 newKey 即新会话数据密钥；prepareSessionRekey 会同步

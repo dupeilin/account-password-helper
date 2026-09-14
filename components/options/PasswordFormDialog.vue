@@ -45,10 +45,10 @@
             <el-input
               v-model="localForm.password"
               type="password"
-              :placeholder="t('options.form.passwordPlaceholder')"
+              :placeholder="t('options.form.passwordPlaceholder', { max: PASSWORD_FIELD_MAX_LENGTH })"
               show-password
               :disabled="loading"
-              maxlength="50"
+              :maxlength="PASSWORD_FIELD_MAX_LENGTH"
               @focus="formPasswordInputFocused = true"
               @blur="formPasswordInputFocused = false"
             >
@@ -248,6 +248,7 @@ import PasswordStrengthPopover from '@/components/options/PasswordStrengthPopove
 import PasswordGeneratorPopover from '@/components/options/PasswordGeneratorPopover.vue';
 import TotpCode from '@/components/TotpCode.vue';
 import { isValidTotpInput } from '@/utils/totp';
+import { PASSWORD_FIELD_MAX_LENGTH } from '@/utils/formValidators';
 import { formatDateTime } from '@/utils/dateFormat';
 import { logger } from '@/utils/logger';
 import { usePasswordHistory } from '@/composables/usePasswordHistory';

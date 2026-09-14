@@ -110,7 +110,8 @@ graph TB
 │   │   ├── contextMenuManager.ts   # 右键上下文菜单（注册/语言重建/填充动作分发）
 │   │   ├── quickAddHandler.ts      # 侧边栏快速添加落库处理
 │   │   ├── inlineDropdownHandler.ts # 内联填充下拉面板的展开与数据下发处理
-│   │   └── autoSaveHandler.ts      # 自动保存凭证处理
+│   │   ├── autoSaveHandler.ts      # 自动保存凭证处理
+│   │   └── pendingCipherKeyStore.ts # 待保存凭据密钥仓（密钥只存 storage.session）
 │   ├── content.ts                  # Content Script 入口
 │   ├── content/                    # Content Script 模块
 │   │   ├── FormDetector.ts         # 表单检测编排器
@@ -212,6 +213,7 @@ graph TB
 │   ├── passwordStrengthCore.ts     # 密码强度规则核心（纯函数、零 i18n/零 Vue 依赖，三方共用判定源）
 │   ├── encryption.ts               # PBKDF2 + AES-256-GCM
 │   ├── crypto-light.ts             # 轻量加密工具
+│   ├── pendingCredentialCodec.ts   # 待确认凭据编解码器（密钥由调用方传入）
 │   ├── sessionManager.ts           # 会话轮询单例（仅 Options 页启动，60 秒一次）
 │   ├── sessionManager-storage.ts   # 会话密钥材料持久化（包裹数据密钥）与有效性判定
 │   ├── backupExport.ts             # 加密备份导出/导入（AES-GCM）
@@ -307,7 +309,7 @@ graph TB
 - 启用后，网站登录时自动捕获账号密码并弹窗确认是否保存（见 [LoginAutoSave.ts](../entrypoints/content/LoginAutoSave.ts)）。
 - 三种凭证捕获场景：表单提交（capture 阶段）、登录按钮点击、密码框回车提交。
 - 域名匹配规则支持精确域名和正则表达式两种模式，规则为空时匹配所有域名；含端口的规则（如 `localhost:3000`）仅精确匹配对应 host + port 组合（见 [AutoSaveSettingDialog.vue](../components/options/AutoSaveSettingDialog.vue)）。
-- sessionStorage 暂存凭证，支持传统表单提交导致的跨页面导航场景。
+- sessionStorage 暂存凭证，支持传统表单提交导致的跨页面导航场景。页面侧只保留**不可解的密文容器**，解密密钥由后台按 `tab + origin` 签发并只存 `chrome.storage.session`（默认 `TRUSTED_CONTEXTS`，宿主页面与内容脚本均不可读，见 [pendingCipherKeyStore.ts](../entrypoints/background/pendingCipherKeyStore.ts)）；申请不到密钥时直接放弃暂存（代价仅为跳转后不复现弹窗），绝不退回明文存储。
 - 保存成功后发送桌面通知，并使密码缓存失效以确保下次加载获取最新数据。
 - **三选项交互**：保存确认弹窗提供「保存」、「暂不保存」和「不再提示」三个操作选项。
 - **可编辑字段**：弹窗中除显示账号和密码外，还提供可编辑的**标签**（默认取页面标题）和**备注**（默认为"自动保存"）输入框，用户可在保存前自定义。

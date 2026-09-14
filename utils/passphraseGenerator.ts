@@ -51,6 +51,20 @@ const MIN_NUMBER_DIGITS = 1;
 /** 最大数字位数 */
 const MAX_NUMBER_DIGITS = 4;
 
+/** 词库单词的最大长度（当前 3080 词实测最长 8 字符，改词库时由测试守卫该假设） */
+const MAX_WORD_LENGTH = 8;
+
+/**
+ * 本生成器可能输出的最长口令长度
+ *
+ * = 最大单词数 × 词库最长词 +（单词数 − 1）个分隔符 + 最大追加数字位数。
+ * 分隔符按 `SEPARATOR_OPTIONS` 提供的单字符选项计，最长 1 字符。
+ *
+ * 密码字段的 `maxlength` 必须 ≥ 此值，否则生成的口令会在赋值时被静默截断，
+ * 导致「界面显示的口令」与「实际存入并注册到站点的口令」不一致且用户无法自查。
+ */
+export const MAX_PASSPHRASE_LENGTH = MAX_WORD_COUNT * MAX_WORD_LENGTH + (MAX_WORD_COUNT - 1) + MAX_NUMBER_DIGITS;
+
 /** 可选分隔符列表（供 UI 使用） */
 export const SEPARATOR_OPTIONS = [
   { label: '-', value: '-' },

@@ -49,8 +49,8 @@ const AMBIGUOUS_CHARS = new Set(['1', 'l', 'I', '0', 'O']);
 /** 最小密码长度 */
 const MIN_LENGTH = 6;
 
-/** 最大密码长度 */
-const MAX_LENGTH = 50;
+/** 最大密码长度（导出以供表单字段上限对齐，勿在未检查生成器上限的情况下改动） */
+export const MAX_PASSWORD_LENGTH = 50;
 
 /**
  * 从字符集中过滤易混淆字符
@@ -87,7 +87,7 @@ function secureRandomInt(max: number): number {
  */
 export function generatePassword(options?: PasswordGeneratorOptions): string {
   const config = { ...DEFAULT_OPTIONS, ...options };
-  const length = Math.max(MIN_LENGTH, Math.min(MAX_LENGTH, config.length));
+  const length = Math.max(MIN_LENGTH, Math.min(MAX_PASSWORD_LENGTH, config.length));
 
   // 构建各字符集（考虑易混淆字符排除）
   const upperCharset = config.excludeAmbiguous ? removeAmbiguous(UPPERCASE_CHARS) : UPPERCASE_CHARS;

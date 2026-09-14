@@ -1,12 +1,13 @@
 import type { QuickAddPasswordData } from '@/utils/types';
 import { logger } from '@/utils/logger';
+import { PASSWORD_FIELD_MAX_LENGTH } from '@/utils/formValidators';
 import { ensureCredentialAccessAfterStartupRelock, invalidatePasswordCache } from './passwordCache';
 import { tl } from '@/utils/i18n-lite';
 
-/** 各字段长度上限（与前端表单 maxlength / 校验规则一致，纵深防御） */
+/** 各字段长度上限（password 与前端 maxlength / 校验规则同源，其余为纵深防御） */
 const FIELD_LIMITS = {
   username: 50,
-  password: 50,
+  password: PASSWORD_FIELD_MAX_LENGTH,
   url: 100,
   tag: 50,
   remark: 1000,

@@ -75,6 +75,24 @@ vi.mock('@/utils/frameFill', () => ({
 const contentSender = (tabUrl: string, tabId = 1): chrome.runtime.MessageSender =>
   ({ id: chrome.runtime.id, tab: { id: tabId, url: tabUrl } }) as chrome.runtime.MessageSender;
 
+/**
+ * 捕获 setupMessageRouter 注册的路由监听器
+ *
+ * @returns 可直接调用的消息处理函数（message, sender, sendResponse）
+ */
+const setupAndCaptureListener = () => {
+  const addListenerSpy = vi.spyOn(chrome.runtime.onMessage, 'addListener');
+  setupMessageRouter();
+  const calls = addListenerSpy.mock.calls;
+  const listener = calls[calls.length - 1][0] as (
+    message: unknown,
+    sender: chrome.runtime.MessageSender,
+    sendResponse: (response?: unknown) => void,
+  ) => unknown;
+  addListenerSpy.mockRestore();
+  return listener;
+};
+
 describe('resolveTrustedContentUrl（自报 URL 可信性校验）', () => {
   describe('合法场景（放行）', () => {
     it('顶层页面自报自身 hostname', () => {
@@ -158,20 +176,6 @@ describe('resolveTrustedContentUrl（自报 URL 可信性校验）', () => {
 describe('QUICK_ADD_PASSWORD 路由发送者守卫（分发级）', () => {
   const quickAddData = { username: 'user', password: 'pass', url: 'example.com' };
 
-  /** 捕获 setupMessageRouter 注册的路由监听器 */
-  const setupAndCaptureListener = () => {
-    const addListenerSpy = vi.spyOn(chrome.runtime.onMessage, 'addListener');
-    setupMessageRouter();
-    const calls = addListenerSpy.mock.calls;
-    const listener = calls[calls.length - 1][0] as (
-      message: unknown,
-      sender: chrome.runtime.MessageSender,
-      sendResponse: (response?: unknown) => void,
-    ) => unknown;
-    addListenerSpy.mockRestore();
-    return listener;
-  };
-
   it('内容脚本发送方被同步拒绝，不落盘', () => {
     const listener = setupAndCaptureListener();
     const sendResponse = vi.fn();
@@ -204,5 +208,36 @@ describe('QUICK_ADD_PASSWORD 路由发送者守卫（分发级）', () => {
     await vi.waitFor(() =>
       expect(sendResponse).toHaveBeenCalledWith({ success: true, message: 'bg.quickAdd.success' }),
     );
+  });
+});
+
+describe('GET_PENDING_CIPHER_KEY 路由分发（凭据密钥签发）', () => {
+  it('内容脚本发送方经异步通道拿到 64 位 hex 密钥', async () => {
+    const listener = setupAndCaptureListener();
+    const sendResponse = vi.fn();
+
+    const result = listener(
+      { type: MessageType.GET_PENDING_CIPHER_KEY },
+      contentSender('https://example.com/'),
+      sendResponse,
+    );
+
+    // sendResponse 在 Promise 续体中调用，处理器必须返回 true 保持通道
+    expect(result).toBe(true);
+    await vi.waitFor(() => expect(sendResponse).toHaveBeenCalledTimes(1));
+    expect(sendResponse).toHaveBeenCalledWith({ key: expect.stringMatching(/^[0-9a-f]{64}$/) });
+  });
+
+  it('无法归属来源（无 tab 上下文）时 fail-closed 返回 key: null', async () => {
+    const listener = setupAndCaptureListener();
+    const sendResponse = vi.fn();
+
+    listener(
+      { type: MessageType.GET_PENDING_CIPHER_KEY },
+      { id: chrome.runtime.id } as chrome.runtime.MessageSender,
+      sendResponse,
+    );
+
+    await vi.waitFor(() => expect(sendResponse).toHaveBeenCalledWith({ key: null }));
   });
 });

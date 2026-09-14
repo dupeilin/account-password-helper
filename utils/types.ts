@@ -230,6 +230,13 @@ export enum MessageType {
    */
   CHECK_CREDENTIAL_STATUS = 'CHECK_CREDENTIAL_STATUS',
   /**
+   * 自动保存弹窗：为落在宿主页面 sessionStorage 的待确认凭据密文申请解密密钥
+   *
+   * background 依据 `sender.tab.id` + `sender.url` 的 origin 签发并缓存于 storage.session，
+   * 密钥从不写入页面可达存储，页面脚本即便读走密文也无法还原。
+   */
+  GET_PENDING_CIPHER_KEY = 'GET_PENDING_CIPHER_KEY',
+  /**
    * 一键填充：由 Popup 或快捷键触发，Background 自动匹配当前域名并填充
    */
   QUICK_FILL = 'QUICK_FILL',
@@ -305,6 +312,7 @@ export type RuntimeMessage =
   | { type: MessageType.CLEAR_PENDING_TOTP }
   | { type: MessageType.SET_PENDING_TOTP; data: SetPendingTotpData }
   | { type: MessageType.CHECK_CREDENTIAL_STATUS; data: CheckCredentialStatusData }
+  | { type: MessageType.GET_PENDING_CIPHER_KEY }
   | { type: MessageType.QUICK_FILL }
   | { type: MessageType.OPEN_INLINE_DROPDOWN; data?: { focusedOnly?: boolean; useContextMenuTarget?: boolean } }
   | { type: MessageType.UPDATE_PASSWORD_METADATA; data: UpdatePasswordMetadataData }
@@ -699,6 +707,17 @@ export interface CredentialStatusResponse {
    * 避免在不会展示的路径上做无用计算。
    */
   risk?: SaveRiskHint;
+}
+
+/**
+ * 待保存凭据密钥响应
+ *
+ * `key` 为 background 按 `tab + origin` 签发并缓存于 storage.session 的 XOR 密钥（64 位 hex）；
+ * 为 null 表示签发失败，可能是无法可信归属请求来源（缺 tab 上下文或 opaque origin），
+ * 也可能是 storage.session 读写异常 —— 两种情况调用方都必须放弃落盘（不得退回明文存储）。
+ */
+export interface PendingCipherKeyResponse {
+  key: string | null;
 }
 
 /**

@@ -52,7 +52,7 @@
   "options.form.addTitle": "Add Password",
   "options.form.editTitle": "Edit Password",
   "options.form.usernamePlaceholder": "Enter a username or email (max 50 characters)",
-  "options.form.passwordPlaceholder": "Optional, password (max 50 characters)",
+  "options.form.passwordPlaceholder": "Optional, password (max {max} characters)",
   "options.form.urlPlaceholder": "Optional; leave empty to match all websites (max 100 characters)",
   "options.form.tagPlaceholder": "Optional, up to {max} tags; type and press Enter to add",
   "options.form.remarkPlaceholder": "Optional, notes (max 1000 characters)",

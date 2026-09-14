@@ -245,6 +245,9 @@ const handleSubmit = async () => {
     const msg = error?.message || '';
     if (error?.code === 'WRONG_PASSWORD' || msg.includes('验证失败')) {
       ElMessage.error(t('options.changePwd.wrongOldPassword'));
+    } else if (error?.code === 'EMPTY_PASSWORD') {
+      // 纯空白新密码过得了 required/min 规则，归一化后在存储层被拒，这里给出本地化提示
+      ElMessage.error(t('options.changePwd.newPasswordRequired'));
     } else {
       ElMessage.error(t('options.changePwd.failed', { msg: msg || t('message.unknownError') }));
     }

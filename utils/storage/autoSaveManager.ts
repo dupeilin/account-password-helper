@@ -173,10 +173,43 @@ export function isDomainMatchForAutoSave(host: string, config: AutoSaveConfig): 
 }
 
 /**
+ * 把条目存储的 URL 或页面 host 规范化为小写 hostname（剥离协议、端口与路径）
+ *
+ * @param raw 原始 URL 或 host，如 `https://a.com/login`、`a.com`、`localhost:3000`
+ * @returns 可比较的 hostname；无法解析时回退为剥离端口的小写字符串
+ */
+function toMatchableHost(raw: string): string {
+  const value = String(raw || '').trim();
+  if (!value) return '';
+  try {
+    return new URL(value.startsWith('http') ? value : `https://${value}`).hostname.toLowerCase();
+  } catch {
+    return value.toLowerCase().split(':')[0];
+  }
+}
+
+/**
+ * 域名匹配精度评分，供多条命中时择优
+ *
+ * @param dataHost 规范化后的页面 host
+ * @param entryHost 规范化后的条目 host
+ * @returns 2 = 同一 hostname；1 = 存在父子域包含关系；0 = 不匹配
+ */
+function hostMatchScore(dataHost: string, entryHost: string): number {
+  if (!dataHost || !entryHost) return 0;
+  if (entryHost === dataHost) return 2;
+  if (entryHost.endsWith(`.${dataHost}`) || dataHost.endsWith(`.${entryHost}`)) return 1;
+  return 0;
+}
+
+/**
  * 在密码库中查找与给定账号+域名匹配的已存条目
  *
  * 匹配条件：用户名完全一致，且域名双向包含（entryHost === dataHost，
  * 或任一方为另一方的子域名）。供自动保存与保存前预检查复用，确保两者判定一致。
+ *
+ * 多条命中时取**最精确**的一条（同一 hostname 优先于父子域），而非数组顺序首条 ——
+ * 避免在 `example.com` 与 `uat.example.com` 并存时改写错条目。精度并列时保留原顺序。
  *
  * @param passwords 已解密的密码条目列表
  * @param data 待匹配的账号与域名
@@ -186,24 +219,21 @@ export function findMatchingEntry(
   passwords: PasswordEntry[],
   data: { username: string; url: string },
 ): PasswordEntry | undefined {
-  // 统一通过 URL 解析提取 hostname（剥离端口号），确保 host:port 与纯 hostname 双向匹配
-  let dataHost: string;
-  try {
-    dataHost = new URL(data.url.startsWith('http') ? data.url : `https://${data.url}`).hostname.toLowerCase();
-  } catch {
-    dataHost = data.url.toLowerCase().split(':')[0];
+  const dataHost = toMatchableHost(data.url);
+  let best: PasswordEntry | undefined;
+  let bestScore = 0;
+
+  for (const entry of passwords) {
+    if (!entry.url || entry.username !== data.username) continue;
+    const score = hostMatchScore(dataHost, toMatchableHost(entry.url));
+    // 严格大于：并列时先到者胜，保持与迁移前相同的条目选择
+    if (score > bestScore) {
+      bestScore = score;
+      best = entry;
+    }
   }
-  return passwords.find(entry => {
-    if (!entry.url || entry.username !== data.username) return false;
-    const entryHost = (() => {
-      try {
-        return new URL(entry.url.startsWith('http') ? entry.url : `https://${entry.url}`).hostname;
-      } catch {
-        return entry.url;
-      }
-    })().toLowerCase();
-    return entryHost === dataHost || entryHost.endsWith('.' + dataHost) || dataHost.endsWith('.' + entryHost);
-  });
+
+  return best;
 }
 
 /**

@@ -146,7 +146,7 @@ See the annotated tree in the Chinese version: [ARCHITECTURE.md — 项目结构
 - When enabled, credentials are captured on site login with a confirmation prompt (see [LoginAutoSave.ts](../entrypoints/content/LoginAutoSave.ts)).
 - Three capture scenarios: form submit (capture phase), login button click, and Enter key in the password field.
 - Domain rules support exact domains and regular expressions; empty rules match all domains. Rules with a port (e.g. `localhost:3000`) only match that exact host + port combination (see [AutoSaveSettingDialog.vue](../components/options/AutoSaveSettingDialog.vue)).
-- sessionStorage staging preserves credentials across page navigation caused by traditional form submits.
+- sessionStorage staging preserves credentials across page navigation caused by traditional form submits. The page only ever holds an **undecryptable container**: the key is issued by the background per `tab + origin` and kept solely in `chrome.storage.session` (default `TRUSTED_CONTEXTS`, unreadable by both the host page and content scripts; see [pendingCipherKeyStore.ts](../entrypoints/background/pendingCipherKeyStore.ts)). When no key can be obtained, staging is skipped entirely (the only cost is the prompt not reappearing after navigation) and never falls back to plaintext.
 - After saving, a desktop notification is sent and the password cache is invalidated so the next load gets fresh data.
 - **Three-option interaction**: the prompt offers "Save", "Not now", and "Never".
 - **Editable fields**: besides showing the account and password, the prompt provides editable **tag** (defaults to the page title) and **remark** (defaults to "Auto-saved") inputs.
