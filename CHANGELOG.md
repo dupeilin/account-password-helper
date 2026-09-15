@@ -1,5 +1,17 @@
 # Changelog
 
+## [3.11.0](https://github.com/liaolongdong/account-password-helper/compare/v3.10.0...v3.11.0) (2026-09-15)
+
+
+### Features
+
+* **shareCard:** 添加一键复制分享卡片功能 ([5e14901](https://github.com/liaolongdong/account-password-helper/commit/5e149011b4573109c93b707faf125398d7814d7d))
+
+
+### Bug Fixes
+
+* **security:** 待确认凭据密钥移出页面存储，并修复四项自动保存与改密缺陷 ([c917d16](https://github.com/liaolongdong/account-password-helper/commit/c917d1645549d832887e70d93d617744f14a4ddf))
+
 ## [3.10.0](https://github.com/liaolongdong/account-password-helper/compare/v3.9.0...v3.10.0) (2026-09-13)
 
 
