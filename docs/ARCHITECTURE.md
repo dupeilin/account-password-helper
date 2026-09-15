@@ -269,7 +269,7 @@ graph TB
 ├── public/icon/                    # 构建期 PNG 产物（WXT 自动注入 manifest）
 ├── scripts/generate-icons.mjs      # SVG → 多尺寸 PNG 生成脚本
 ├── types/global.d.ts               # 全局类型补充
-├── .github/workflows/static.yml    # GitHub Pages 部署
+├── .github/workflows/              # ci.yml（校验）与 release-please.yml（发版）
 ├── wxt.config.ts                   # WXT 配置
 └── package.json
 ```

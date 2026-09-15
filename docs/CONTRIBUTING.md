@@ -325,7 +325,7 @@ graph LR
   pnpm build              # 生产构建验证
   ```
 
-> ⚠️ **CI 现状**：`.github/workflows/release-please.yml` 只执行 `pnpm install` + `pnpm run build`，`static.yml` 只构建 Pages 站点——**云端不跑测试、lint、typecheck**。上述检查只由本地 `husky` + `lint-staged` 钩子对变更文件执行，因此跳过本地检查的 PR 不会被 CI 拦下。
+> ⚠️ **CI 现状**：`.github/workflows/ci.yml` 在 push 到 `main` 与 PR 上执行 `pnpm typecheck`、`pnpm lint`、`pnpm lint:style`、`pnpm test:run` 与 `pnpm build`（含 Firefox）；`.github/workflows/release-please.yml` 只负责发版，执行 `pnpm install` + `pnpm run build`。本地 `husky` + `lint-staged` 钩子仍对变更文件执行同样检查，是提交前的第一道关。
 >
 > 版本号与 `CHANGELOG.md` 由 release-please 自动管理，PR 中请勿手改这两个文件。
 
@@ -680,7 +680,7 @@ This is a password manager — security is the top priority. Please follow these
   pnpm build              # Production build verification
   ```
 
-> ⚠️ **What CI actually does**: `.github/workflows/release-please.yml` runs only `pnpm install` + `pnpm run build`, and `static.yml` only builds the Pages site — **the cloud never runs tests, lint, or typecheck**. The checks above are enforced only locally, by the `husky` + `lint-staged` hook on changed files, so a PR that skips them locally will not be caught by CI.
+> ⚠️ **What CI actually does**: `.github/workflows/ci.yml` runs `pnpm typecheck`, `pnpm lint`, `pnpm lint:style`, `pnpm test:run`, and `pnpm build` (including Firefox) on pushes to `main` and on pull requests; `.github/workflows/release-please.yml` only handles releases, running `pnpm install` + `pnpm run build`. The local `husky` + `lint-staged` hook still runs the same checks on changed files and remains the first gate before commit.
 >
 > Version numbers and `CHANGELOG.md` are managed automatically by release-please; do not edit those two files by hand in a PR.
 

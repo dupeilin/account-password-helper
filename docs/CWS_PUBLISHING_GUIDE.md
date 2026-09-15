@@ -331,4 +331,4 @@ Fully open-source, code auditable: https://github.com/liaolongdong/account-passw
 补充两点：
 
 - 跳过条件只看 `CWS_EXTENSION_ID`：**它为空**时步骤 3 整体跳过，Release 仍会正常构建并挂到 GitHub Releases；**它有值但 OAuth 三项 Secret 缺失或过期**时，凭据预检会让作业失败（不是跳过），需按错误提示更新那一套 Secret。
-- `.github/workflows/static.yml` 在 push 到 `main` 时把仓库根目录整体作为 Pages 产物上传，并在部署前用 `scripts/build-*-page.mjs` 重新生成 `en.html`、`pricing.en.html`、`privacy.en.html` 与 `blog/*.html`——因此新增对外页面只要提交中文源文件即可上线英文版，但也意味着**入库即公开**，不要把内部文档放进仓库根目录。
+- Pages 由仓库设置里的 `Deploy from a branch`（`main` / 根目录）发布，CI 不参与生成站点——`en.html`、`pricing.en.html`、`privacy.en.html` 与 `blog/*.html` 需本地跑 `pnpm gen:en` / `gen:pricing-en` / `gen:privacy-en` / `gen:blog` 后提交；只改中文源而不重跑生成，线上英文版会滞后于中文版。站点直接服务 `main` 根目录，意味着**入库即公开**，不要把内部文档放进仓库根目录。
