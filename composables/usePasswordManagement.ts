@@ -466,7 +466,7 @@ export function usePasswordManagement(options: { validityForm: Ref<{ validityHou
     }
   };
 
-  // 复制密码
+  // 创建副本：由既有条目复制出一条独立的新条目（列表操作列的「创建副本」，不写剪贴板）
   const copyPassword = async (password: PasswordEntry) => {
     try {
       const newPasswordEntry = {
@@ -502,7 +502,7 @@ export function usePasswordManagement(options: { validityForm: Ref<{ validityHou
 
       ElMessage.success(t('form.copySuccess'));
     } catch (error: any) {
-      logger.error('复制密码失败:', error);
+      logger.error('创建副本失败:', error);
       ElMessage.error(t('form.copyFailedDetail', { message: error.message || t('message.unknownError') }));
     }
   };

@@ -40,7 +40,7 @@
   "options.batchTag.removeTip": "Selected tags will be removed from each selected entry",
   "options.table.loading": "Loading data...",
   "options.table.updateTime": "Updated",
-  "options.table.copyEntry": "Copy entry",
+  "options.table.copyEntry": "Duplicate",
   "options.detail.title": "Entry Details",
   "options.detail.viewDetail": "View details",
   "options.detail.copied": "Copied to clipboard",

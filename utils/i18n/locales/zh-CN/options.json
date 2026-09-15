@@ -40,7 +40,7 @@
   "options.batchTag.removeTip": "选中标签将从每条选中条目的已有标签中移除",
   "options.table.loading": "加载数据中...",
   "options.table.updateTime": "更新时间",
-  "options.table.copyEntry": "复制条目",
+  "options.table.copyEntry": "创建副本",
   "options.detail.title": "条目详情",
   "options.detail.viewDetail": "查看详情",
   "options.detail.copied": "已复制到剪贴板",
