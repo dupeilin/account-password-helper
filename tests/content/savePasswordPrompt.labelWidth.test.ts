@@ -80,7 +80,7 @@ describe('保存密码弹窗的标签列宽', () => {
 
   /** 取出四个标签元素上的列宽与换行设置 */
   const readLabels = (): { text: string; width: string; whiteSpace: string }[] =>
-    [...document.querySelectorAll('.aph-save-password-prompt span')]
+    [...document.querySelectorAll<HTMLSpanElement>('.aph-save-password-prompt span')]
       .filter(el => LABEL_TEXTS.includes((el.textContent || '').trim()))
       .map(el => ({
         text: (el.textContent || '').trim(),

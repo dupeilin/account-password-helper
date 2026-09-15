@@ -79,6 +79,8 @@ interface Emits {
   copyPassword: [password: string];
   fillTotp: [password: PasswordEntry];
   copyTotp: [password: PasswordEntry];
+  /** 复制「用户名 / 密码 / 网址」分享卡片 */
+  shareCard: [password: PasswordEntry];
 }
 
 const props = defineProps<Props>();
@@ -559,6 +561,7 @@ onUnmounted(() => {
           @copy-password="p => emit('copyPassword', p)"
           @fill-totp="p => emit('fillTotp', p)"
           @copy-totp="p => emit('copyTotp', p)"
+          @share-card="p => emit('shareCard', p)"
           @mouseenter="emit('activate', index)"
         />
       </div>

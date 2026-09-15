@@ -48,6 +48,8 @@
   "sidepanel.item.copyTotp": "Copy 2FA code",
   "sidepanel.item.fillAndLogin": "Fill and sign in",
   "sidepanel.item.openSite": "Open site",
+  "sidepanel.item.shareCard": "Copy share card (includes password)",
+  "sidepanel.item.shareCardPlain": "Copy share card",
   "sidepanel.tagFilterLabel": "Filter by tags",
   "sidepanel.quickAdd.title": "Add credentials",
   "sidepanel.quickAdd.usernamePlaceholder": "Account / email / phone",

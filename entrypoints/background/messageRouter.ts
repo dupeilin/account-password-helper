@@ -1,4 +1,4 @@
-import { type RuntimeMessage, MessageType } from '@/utils/types';
+import { type RuntimeMessage, type PendingCipherKeyResponse, MessageType } from '@/utils/types';
 import { logger } from '@/utils/logger';
 import {
   getTabIdSync,
@@ -23,6 +23,7 @@ import {
   grantCredentialAccessAfterStartupRelock,
 } from './passwordCache';
 import { handleAutoSavePassword, handleCheckCredentialStatus } from './autoSaveHandler';
+import { issuePendingCipherKey } from './pendingCipherKeyStore';
 import { handleQuickAddPassword } from './quickAddHandler';
 import { handleQuickFill } from './quickFillHandler';
 import { handleOpenInlineDropdown } from './inlineDropdownHandler';
@@ -567,6 +568,16 @@ export function setupMessageRouter(): void {
         }
         handleCheckCredentialStatus({ ...message.data, url: trustedCheckUrl }).then(result => {
           sendResponse(result);
+        });
+        return true;
+      }
+
+      case MessageType.GET_PENDING_CIPHER_KEY: {
+        // 内容脚本为宿主页面 sessionStorage 中的待确认凭据密文申请密钥。
+        // 归属仅由 sender.tab.id + sender.url 推导（不接受自报值），无法归属时签发失败，
+        // 调用方据此放弃弹窗，绝不退回明文存储。
+        issuePendingCipherKey(sender).then(key => {
+          sendResponse({ key } satisfies PendingCipherKeyResponse);
         });
         return true;
       }

@@ -6,6 +6,7 @@
  */
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { handleQuickAddPassword } from '@/entrypoints/background/quickAddHandler';
+import { PASSWORD_FIELD_MAX_LENGTH } from '@/utils/formValidators';
 
 // 保留 sidePanelManager 桩：handler 已不再向其发送刷新通知，
 // 该桩用于断言「不通过 port 通知」的回归守卫（见下方成功路径用例）
@@ -137,10 +138,12 @@ describe('handleQuickAddPassword 字段校验（边界不可信输入）', () =>
       success: false,
       message: 'bg.quickAdd.tooLong',
     });
-    expect(await handleQuickAddPassword({ ...validData, password: 'x'.repeat(51) })).toEqual({
-      success: false,
-      message: 'bg.quickAdd.tooLong',
-    });
+    expect(await handleQuickAddPassword({ ...validData, password: 'x'.repeat(PASSWORD_FIELD_MAX_LENGTH + 1) })).toEqual(
+      {
+        success: false,
+        message: 'bg.quickAdd.tooLong',
+      },
+    );
     expect(await handleQuickAddPassword({ ...validData, url: 'x'.repeat(101) })).toEqual({
       success: false,
       message: 'bg.quickAdd.tooLong',
@@ -160,7 +163,7 @@ describe('handleQuickAddPassword 字段校验（边界不可信输入）', () =>
     await handleQuickAddPassword({
       ...validData,
       username: 'x'.repeat(50),
-      password: 'x'.repeat(50),
+      password: 'x'.repeat(PASSWORD_FIELD_MAX_LENGTH),
       url: 'x'.repeat(100),
       tag: 'x'.repeat(50),
       remark: 'x'.repeat(1000),

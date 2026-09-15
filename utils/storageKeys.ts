@@ -95,4 +95,13 @@ export const SESSION_MEMORY_KEYS = {
    * failed 状态仅在本标记明确引用同一次失败后才允许恢复。
    */
   BROWSER_STARTUP_RELOCK_RECOVERY: 'browser_startup_relock_recovery',
+  /**
+   * 待保存凭据密钥仓（`"<tabId>:<origin>"` → `{ k: hex 密钥, t: 签发时间戳 }` 聚合对象）
+   *
+   * 供 content script 加解密落在宿主页面 sessionStorage 的「待确认保存」凭据。密钥
+   * 只存在这里：storage.session 仅内存、默认 TRUSTED_CONTEXTS，宿主页面与本扩展的
+   * 内容脚本都读不到，因此页面侧只剩不可解的密文。按 tab + origin 隔离，等价于
+   * sessionStorage 自身的作用域边界，同站导航后新文档可解回、跨站与跨标签页不可。
+   */
+  PENDING_CIPHER_KEYS: 'pending_cipher_keys',
 };

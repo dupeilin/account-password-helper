@@ -87,6 +87,28 @@ export class FormDetector {
   /** DOM 变化检测的 debounce 计时器（可取消） */
   private detectionTimer: ReturnType<typeof setTimeout> | null = null;
 
+  /**
+   * 页面导航与可见性回调
+   *
+   * 必须持有固定引用（而非注册时的匿名闭包），否则 destroy() 无法解绑：
+   * 扩展重载/更新后孤儿实例会继续响应页面事件并调用 chrome API，
+   * 触发 "Extension context invalidated"（与 content.ts 的清理目标相悖）。
+   */
+  private handleDomReady = (): void => {
+    setTimeout(() => this.detectForms(), this.longDelayTime);
+  };
+  private handleVisibilityChange = (): void => {
+    if (document.hidden) {
+      this.hideSidePanel();
+    }
+  };
+  private handlePageUnload = (): void => {
+    this.hideSidePanel();
+  };
+  private handlePopState = (): void => {
+    this.notifyUrlChange();
+  };
+
   /** 输入填充器 */
   private inputFiller = new InputFiller();
   /** 复选框处理器 */
@@ -183,9 +205,7 @@ export class FormDetector {
   private init(): void {
     // 页面加载完成后检测表单
     if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', () => {
-        setTimeout(() => this.detectForms(), this.longDelayTime);
-      });
+      document.addEventListener('DOMContentLoaded', this.handleDomReady);
     } else {
       setTimeout(() => this.detectForms(), this.shortDelayTime);
     }
@@ -869,11 +889,7 @@ export class FormDetector {
    * 监听页面可见性变化，页面隐藏时自动关闭侧边栏
    */
   private addPageVisibilityListener(): void {
-    document.addEventListener('visibilitychange', () => {
-      if (document.hidden) {
-        this.hideSidePanel();
-      }
-    });
+    document.addEventListener('visibilitychange', this.handleVisibilityChange);
   }
 
   /**
@@ -881,13 +897,8 @@ export class FormDetector {
    * URL 变化检测已合并至主 MutationObserver，此处仅保留 popstate 以捕获浏览器前进/后退
    */
   private addPageNavigationListener(): void {
-    window.addEventListener('beforeunload', () => {
-      this.hideSidePanel();
-    });
-
-    window.addEventListener('popstate', () => {
-      this.notifyUrlChange();
-    });
+    window.addEventListener('beforeunload', this.handlePageUnload);
+    window.addEventListener('popstate', this.handlePopState);
   }
 
   /**
@@ -1357,6 +1368,10 @@ export class FormDetector {
     }
     document.removeEventListener('click', this.handleDelegatedClick, { capture: true });
     document.removeEventListener('focusin', this.handleDelegatedFocusIn, { capture: true });
+    document.removeEventListener('visibilitychange', this.handleVisibilityChange);
+    document.removeEventListener('DOMContentLoaded', this.handleDomReady);
+    window.removeEventListener('beforeunload', this.handlePageUnload);
+    window.removeEventListener('popstate', this.handlePopState);
     if (this.storageListener) {
       try {
         chrome.storage.onChanged.removeListener(this.storageListener);

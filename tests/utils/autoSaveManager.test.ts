@@ -71,6 +71,44 @@ describe('findMatchingEntry', () => {
     const list = [makePasswordEntry({ id: '1', username: 'alice', url: '' })];
     expect(findMatchingEntry(list, { username: 'alice', url: 'github.com' })).toBeUndefined();
   });
+
+  it('多条命中时精确同域条目优先于数组中靠前的子域条目', () => {
+    const list = [
+      makePasswordEntry({ id: 'apex', username: 'alice', url: 'example.com', password: 'x' }),
+      makePasswordEntry({ id: 'exact', username: 'alice', url: 'uat.example.com', password: 'x' }),
+    ];
+    expect(findMatchingEntry(list, { username: 'alice', url: 'uat.example.com' })?.id).toBe('exact');
+  });
+
+  it('精确条目排在数组末尾时依然胜出（择优不依赖顺序）', () => {
+    const list = [
+      makePasswordEntry({ id: 'apex', username: 'alice', url: 'example.com', password: 'x' }),
+      makePasswordEntry({ id: 'other', username: 'alice', url: 'foo.example.com', password: 'x' }),
+      makePasswordEntry({ id: 'exact', username: 'alice', url: 'uat.example.com', password: 'x' }),
+    ];
+    expect(findMatchingEntry(list, { username: 'alice', url: 'uat.example.com' })?.id).toBe('exact');
+  });
+
+  it('无精确同域条目时仍按原有子域规则命中（匹配集合不因择优而收窄）', () => {
+    const list = [
+      makePasswordEntry({ id: 'apex', username: 'alice', url: 'example.com', password: 'x' }),
+      makePasswordEntry({ id: 'other', username: 'alice', url: 'foo.example.com', password: 'x' }),
+    ];
+    expect(findMatchingEntry(list, { username: 'alice', url: 'uat.example.com' })?.id).toBe('apex');
+  });
+
+  it('精度并列时保持数组中靠前的条目（择优不改变既有首个命中行为）', () => {
+    // 页面 a.b.example.com 同时被 b.example.com 与 example.com 父域包含，
+    // 两者得分同为 1 —— 真正的并列，此时必须沿用迁移前的首个命中。
+    const page = { username: 'alice', url: 'a.b.example.com' };
+    const list = [
+      makePasswordEntry({ id: 'first', username: 'alice', url: 'b.example.com', password: 'x' }),
+      makePasswordEntry({ id: 'second', username: 'alice', url: 'example.com', password: 'x' }),
+    ];
+    expect(findMatchingEntry(list, page)?.id).toBe('first');
+    // 换序后胜者随之改变，证明这里生效的是数组顺序而非某条 host 字面量
+    expect(findMatchingEntry([...list].reverse(), page)?.id).toBe('second');
+  });
 });
 
 describe('checkCredentialStatus', () => {

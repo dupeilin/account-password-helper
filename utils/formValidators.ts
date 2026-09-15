@@ -4,6 +4,17 @@
  * 提供可复用的校验器工厂函数与表单规则工厂，供多个表单组件共享校验逻辑。
  */
 import type { FormRules } from 'element-plus';
+import { MAX_PASSWORD_LENGTH } from '@/utils/passwordGenerator';
+import { MAX_PASSPHRASE_LENGTH } from '@/utils/passphraseGenerator';
+
+/**
+ * 密码字段的长度容量（单一事实来源）
+ *
+ * 取两个口令生成器可能输出的最长值，供三处共用：输入框 `maxlength`、
+ * 本文件的校验规则、`background/quickAddHandler` 的落盘兜底。任一处单独
+ * 收窄都会把合法生成的口令静默截断或在编辑态误拒，用户无从察觉。
+ */
+export const PASSWORD_FIELD_MAX_LENGTH = Math.max(MAX_PASSWORD_LENGTH, MAX_PASSPHRASE_LENGTH);
 
 /**
  * 创建 URL/域名格式校验器
@@ -61,14 +72,22 @@ export function createUrlValidator(t: (key: string) => string) {
  * @param t 国际化翻译函数
  * @returns Element Plus FormRules（不含 tag 与 TOTP 等扩展字段）
  */
-export function createPasswordFormRules(t: (key: string) => string): FormRules {
+export function createPasswordFormRules(
+  t: (key: string, named?: Record<string, string | number>) => string,
+): FormRules {
   const urlValidator = createUrlValidator(t);
   return {
     username: [
       { required: true, message: t('form.usernameRequired'), trigger: 'blur' },
       { max: 50, message: t('form.usernameMax'), trigger: 'blur' },
     ],
-    password: [{ max: 50, message: t('form.passwordMax'), trigger: 'blur' }],
+    password: [
+      {
+        max: PASSWORD_FIELD_MAX_LENGTH,
+        message: t('form.passwordMax', { max: PASSWORD_FIELD_MAX_LENGTH }),
+        trigger: 'blur',
+      },
+    ],
     url: [
       { max: 100, message: t('form.urlMax'), trigger: 'blur' },
       { validator: urlValidator, trigger: 'blur' },

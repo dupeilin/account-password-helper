@@ -6,7 +6,7 @@ import { MessageType } from '@/utils/types';
 import type { RuntimeMessage, QuickAddPasswordData } from '@/utils/types';
 import { logger } from '@/utils/logger';
 import { useI18n, registerMessages } from '@/utils/i18n';
-import { createPasswordFormRules } from '@/utils/formValidators';
+import { createPasswordFormRules, PASSWORD_FIELD_MAX_LENGTH } from '@/utils/formValidators';
 import zhForm from '@/utils/i18n/locales/zh-CN/form.json';
 import enForm from '@/utils/i18n/locales/en/form.json';
 
@@ -164,7 +164,7 @@ const handleOpenOptionsAdd = () => {
             type="password"
             show-password
             :placeholder="t('sidepanel.quickAdd.passwordPlaceholder')"
-            maxlength="50"
+            :maxlength="PASSWORD_FIELD_MAX_LENGTH"
             @keyup.enter="handleSubmit"
           >
             <!-- 动作语义：密文显示睁眼（点击显示），明文显示划线眼（点击隐藏） -->

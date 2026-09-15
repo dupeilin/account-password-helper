@@ -13,8 +13,9 @@
  */
 import { beforeEach, describe, expect, it } from 'vitest';
 import type { FormItemRule, FormRules } from 'element-plus';
-import { createPasswordFormRules, createUrlValidator } from '@/utils/formValidators';
+import { createPasswordFormRules, createUrlValidator, PASSWORD_FIELD_MAX_LENGTH } from '@/utils/formValidators';
 import { MAX_TAG_COUNT, MAX_TAG_LENGTH } from '@/composables/usePasswordManagement';
+import { MAX_PASSPHRASE_LENGTH } from '@/utils/passphraseGenerator';
 import { stringifyTags } from '@/utils/tagUtils';
 
 /** 工厂实际请求过的 i18n 键（用于断言其文案面，防止已删除的死键被重新引用） */
@@ -83,13 +84,25 @@ describe('createPasswordFormRules', () => {
       { required: true, message: 'form.usernameRequired', trigger: 'blur' },
       { max: 50, message: 'form.usernameMax', trigger: 'blur' },
     ]);
-    expect(rulesOf(rules, 'password')).toEqual([{ max: 50, message: 'form.passwordMax', trigger: 'blur' }]);
+    expect(rulesOf(rules, 'password')).toEqual([
+      { max: PASSWORD_FIELD_MAX_LENGTH, message: 'form.passwordMax', trigger: 'blur' },
+    ]);
     expect(rulesOf(rules, 'remark')).toEqual([{ max: 1000, message: 'form.remarkMax', trigger: 'blur' }]);
 
     const urlRules = rulesOf(rules, 'url');
     expect(urlRules[0]).toEqual({ max: 100, message: 'form.urlMax', trigger: 'blur' });
     expect(urlRules[1].trigger).toBe('blur');
     expect(typeof urlRules[1].validator).toBe('function');
+  });
+
+  it('password 上限可容纳生成器最长输出（长助记词组编辑态不被拒）', () => {
+    // 与 tag 字段同一缺陷类：validate() 在 trigger 为空时放行全部规则，
+    // 故 max 小于生成器上限会让已有长口令条目的任何改动都存不下。
+    const rules = createPasswordFormRules(t);
+    const passwordMax = rulesOf(rules, 'password')[0].max as number;
+
+    expect(MAX_PASSPHRASE_LENGTH).toBeGreaterThan(50);
+    expect(passwordMax).toBeGreaterThanOrEqual(MAX_PASSPHRASE_LENGTH);
   });
 
   it('tagArray 允许的最长标签串不受任何规则约束', () => {
