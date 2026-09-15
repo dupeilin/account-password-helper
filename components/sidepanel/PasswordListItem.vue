@@ -11,9 +11,11 @@ import {
   Timer,
   DocumentCopy,
   Link,
+  Share,
 } from '@element-plus/icons-vue';
 import type { PasswordEntry } from '@/utils/types';
 import { buildTagPresentationRecords } from '@/utils/tagUtils';
+import { hasShareCardPassword } from '@/utils/shareCard';
 import { activateOnKeydown } from '@/utils/a11y';
 import SiteFavicon from '@/components/SiteFavicon.vue';
 import SearchHighlight from '@/components/SearchHighlight.vue';
@@ -66,6 +68,8 @@ interface Emits {
   fillTotp: [password: PasswordEntry];
   /** 复制 TOTP 两步验证码 */
   copyTotp: [password: PasswordEntry];
+  /** 复制「用户名 / 密码 / 网址」分享卡片 */
+  shareCard: [password: PasswordEntry];
 }
 
 const props = withDefaults(defineProps<Props>(), { searchKeyword: '', canFill: true });
@@ -78,6 +82,16 @@ const tagPresentationRecords = computed(() => buildTagPresentationRecords(props.
 
 /** 整行动作的无障碍文案：本站条目为填充，外站条目为打开其站点 */
 const actionTitle = computed(() => (props.canFill ? t('sidepanel.item.fillTitle') : t('sidepanel.item.openSiteTitle')));
+
+/**
+ * 分享图标的无障碍文案
+ *
+ * 只有真的带上密码才承诺「含密码」：Element Plus 的 Share 图标本身不传达「复制的是凭据」，
+ * tooltip 是点击前唯一的提示载体，对空密码条目继续说「含密码」会与点击后的告警自相矛盾。
+ */
+const shareTitle = computed(() =>
+  hasShareCardPassword(props.password) ? t('sidepanel.item.shareCard') : t('sidepanel.item.shareCardPlain'),
+);
 
 /** 整行点击 / 键盘激活：按能否填充分派，与 title / aria-label 保持同一语义 */
 const activate = () => {
@@ -109,10 +123,12 @@ const activate = () => {
         >
           <el-icon><User /></el-icon>
         </SiteFavicon>
-        <SearchHighlight
-          :text="password.username"
-          :keyword="searchKeyword"
-        />
+        <span class="username-text">
+          <SearchHighlight
+            :text="password.username"
+            :keyword="searchKeyword"
+          />
+        </span>
         <span
           class="copy-icon-wrapper"
           role="button"
@@ -260,6 +276,18 @@ const activate = () => {
       >
         <Link />
       </el-icon>
+      <!-- 分享卡片：整行级动作（跨用户名/密码/网址三字段），故与编辑同列于右侧动作区；外站条目同样可分享 -->
+      <el-icon
+        class="action-icon share-icon"
+        role="button"
+        tabindex="0"
+        :title="shareTitle"
+        :aria-label="shareTitle"
+        @click.stop="$emit('shareCard', password)"
+        @keydown.stop="activateOnKeydown($event, () => $emit('shareCard', password))"
+      >
+        <Share />
+      </el-icon>
       <el-icon
         class="action-icon edit-icon"
         role="button"
@@ -328,6 +356,14 @@ const activate = () => {
   margin-right: 6px;
   font-size: 16px;
   color: var(--aph-text-secondary);
+}
+
+/* 省略号只能长在会收缩的 flex 子项上：.username 是 flex 容器，其 overflow 只能硬裁 */
+.username-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* 网站图标与原用户图标占位一致，布局零偏移 */
@@ -502,15 +538,17 @@ const activate = () => {
   color: #67c23a;
 }
 
-/* 打开站点图标（外站条目专用，位置与「填充并登录」对称） */
-.open-site-icon {
+/* 打开站点与分享卡片：同为「带右间距的次要动作图标」，共用一套状态色（与 totp 双图标的合并写法一致） */
+.open-site-icon,
+.share-icon {
   margin-right: 8px;
   color: var(--aph-icon-action);
   cursor: pointer;
   transition: color 0.2s;
 }
 
-.open-site-icon:hover {
+.open-site-icon:hover,
+.share-icon:hover {
   color: var(--aph-primary);
 }
 

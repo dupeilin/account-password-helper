@@ -234,7 +234,8 @@ graph TB
 │   ├── passwordSort.ts             # 密码排序工具
 │   ├── passwordFilter.ts           # 侧边栏列表过滤纯函数（本站/全站范围判定、能否填充单一事实来源）
 │   ├── searchMatch.ts              # 智能搜索匹配纯函数（子串 + 拼音/首字母缩写 + 命中区间）
-│   ├── clipboard.ts                # 剪贴板复制与限时自动清除（UI 无关，options/sidepanel 共用）
+│   ├── clipboard.ts                # 剪贴板复制与限时自动清除（UI 无关，options 详情抽屉使用）
+│   ├── shareCard.ts                # 分享卡片纯文本构造（用户名/密码/网址一段，标签由调用方注入，内容零日志）
 │   ├── logger.ts                   # 环境感知日志
 │   ├── env.ts                      # isDev / isFirefox 常量
 │   ├── platform.ts                 # 操作系统平台检测（Windows 判定，跨上下文复用）
@@ -372,6 +373,7 @@ graph TB
 - **网站图标展示**：密码列表与侧边栏条目展示对应网站的图标，经 Chrome 本地 `_favicon/` 端点读取浏览器图标缓存，零外部网络请求（见 [SiteFavicon.vue](../components/SiteFavicon.vue)）；无缓存图标或不支持的环境自动降级为默认图标，布局零偏移。
 - **侧边栏快速添加**：顶栏「+」就地打开快速添加弹窗（见 [QuickAddDialog.vue](../components/sidepanel/QuickAddDialog.vue)），网址自动预填当前域名；本站无账号或搜索无结果时，空态同样提供「添加本站账号」入口。弹窗只收账号 / 密码 / 网址 / 标签 / 备注五个高频字段，TOTP 等完整字段经「到密码管理中完整添加」跳到选项页录入。
 - **搜索范围切换（本站 / 全站）**：搜索框右侧图标在 `site`（默认，仅当前域名匹配 + 空 URL 通用条目）与 `all`（全库条目）之间切换，判定与过滤集中在无 Vue 依赖的纯函数 [passwordFilter.ts](../utils/passwordFilter.ts)（`matchesSiteScope` / `filterEntriesByScope`），与「能否填充当前页」共用同一判据，避免两处语义分叉；域名或端口变化时自动回到 `site`（切到同域名的其它标签页仍保留全站态）。全站模式下命中的外站条目 `canFill` 为假，整行降级为「在新标签页打开该站点」（经 [domain.ts](../utils/domain.ts) 的 `toNavigableUrl` 补默认协议并拒绝 `javascript:` 等非导航协议），但复制账号 / 密码 / 验证码、收藏、编辑仍然可用；本站无命中而全库有命中时，空态给出「在全部条目中查找（N 条）」一键切换。
+- **分享卡片**：条目右侧动作区新增一枚分享图标，无条件渲染且始终紧邻「编辑」左侧（全站模式下的外站条目会在它前面另出现一枚「打开站点」图标）；单击即把该条目的用户名 / 密码 / 网址合成一段纯文本写入剪贴板（网址为空时省略该行），一次粘贴即可发给同事或家人，不弹确认、不引入新对话框（见 [shareCard.ts](../utils/shareCard.ts)）；条目未填密码时卡片不含可用凭据，提示由成功改为告警（`fill.shareCardNoPassword`），避免分享者误以为凭据已完整交付；行图标 tooltip 按同一判定取词（`hasShareCardPassword`，有密码才写「含密码」），点击前后不会自相矛盾。
 - **搜索占位与空态文案**：占位符为「账号/标签/备注/网址」，搜索区 `aria-label` 与 `title` 标注支持拼音搜索；空态按是否已输入关键词给不同文案，未输入时提示添加引导，已输入无结果时附拼音首字母搜索技巧说明（如 `zf` 匹配「支付」）。
 - **面板内键盘操作**：`↑` / `↓` 在结果列表间移动，`Enter` 填充高亮条目（全站模式下的外站条目改为打开其站点），`Esc` 关闭侧边栏，`Ctrl+C` 复制高亮条目的用户名；焦点在搜索框等可编辑元素内时让路给浏览器原生复制，避免吃掉用户选中的文本。`Ctrl+Shift+C` 刻意留空（源码注释标注「复制密码 暂不需要」），不与开发者工具抢键（见 [sidepanel/App.vue](../entrypoints/sidepanel/App.vue)）。
 - **分片渲染**：首帧只渲染前 30 条以压缩大库用户的渲染耗时，其余在后续动画帧里每帧放开 60 条直至覆盖全量（见 [SidepanelAuthView.vue](../components/sidepanel/SidepanelAuthView.vue) 的 `INITIAL_RENDER_COUNT` / `RENDER_BATCH_SIZE`）；列表被过滤到上限以内时直接复用原数组引用，零拷贝。
@@ -406,10 +408,11 @@ graph TB
 
 ### 14. 剪贴板自动清除
 
-- 机制层住在与 UI 无关的 [utils/clipboard.ts](../utils/clipboard.ts)：`copySecretToClipboard()` 写入明文敏感值后按配置排程清除，侧边栏与密码管理页详情抽屉复用同一实现，各自注入自己的提示文案。
+- 机制层按上下文分治，是**两套互不知情的定时器**：密码管理页详情抽屉走与 UI 无关的 [utils/clipboard.ts](../utils/clipboard.ts)（`copySecretToClipboard()` 写入明文敏感值后按配置排程清除）；侧边栏走 [useSidepanelFill.ts](../composables/useSidepanelFill.ts) 自带的模块级 `clipboardClearTimer` + `copiedPasswordSnapshot`。共享的只有纯文本构造，定时器绝不跨上下文混用——同一上下文并存两个定时器时，旧定时器会误清刚复制的内容。
 - **默认开启**（`autoClear: true`、`clearAfterSeconds: 30`），延时可选 10 / 15 / 30 / 60 / 120 秒（见 [ClipboardSettingDialog.vue](../components/options/ClipboardSettingDialog.vue)），入口位于密码管理页「安全设置」下拉菜单 →「剪贴板设置」。
 - 清除前验证剪贴板内容仍为当初复制的值（优先用 Async Clipboard API 读取比对）；内容已被用户替换则跳过清除。文档失焦无法读取时降级为「尽力清除」，此时 `navigator.clipboard.writeText('')` 仍会失败，改用隐藏 `textarea` + `document.execCommand('copy')` 写入零宽空格覆写（空选择集是 no-op，必须写入非空内容才真正生效）。
-- **作用范围只有密码类复制**：复制密码、复制历史密码走限时清除；复制用户名 / 网址调用 `copyTextToClipboard()`，会顺带取消待执行的清除定时器，避免误清刚复制的普通文本。两步验证码不经该定时器——它由 `copyTotp` 直接写入剪贴板（Async Clipboard 失败时同样降级 `execCommand`），动态码本身 30 秒滚动失效。
+- **作用范围是「剪贴板里留下了明文密码」的复制**：复制密码、复制历史密码、复制分享卡片走限时清除；复制用户名 / 网址调用 `copyTextToClipboard()`，会顺带取消待执行的清除定时器，避免误清刚复制的普通文本。两步验证码不经该定时器——它由 `copyTotp` 直接写入剪贴板（Async Clipboard 失败时同样降级 `execCommand`），动态码本身 30 秒滚动失效。
+- **分享卡片同步构造、逐字输出**：卡片文本由 [utils/shareCard.ts](../utils/shareCard.ts) 纯函数生成，标签由调用方注入（`common.username` / `common.password` / `common.url`），冒号随语言取全角 `：` 或半角 `: `，网址为空时整行省略，值内换行折成空格以防破坏行结构。构造必须在 `writeText` 之前同步完成，一旦 `await`（例如动态导入）就会消耗掉侧边栏的瞬时用户激活，Async Clipboard API 随后可能抛错。网址按存储原值逐字写入而不走 `toNavigableUrl`：卡片是纯文本、不构成导航 sink，而该函数会补协议、改写 localhost，并对 `javascript:` 返回 `null` 导致整行静默丢失。含明文卡片的文本在任何日志中都不出现，失败分支只记录错误对象本身。条目密码为空时卡片照旧复制并照旧排程清除——不为这一边界分叉第二条路径，只在提示上分流（宁可多清一次，也不留一条未受保护的路径）。
 
 ### 15. 两步验证（TOTP）
 
@@ -494,7 +497,8 @@ graph TB
 - 密码列表每行的「查看详情」以只读抽屉展示单条账号的完整信息（见 [PasswordDetailDrawer.vue](../components/options/PasswordDetailDrawer.vue)）：站点图标、用户名、网址、密码、两步验证活码、标签、备注全文、密码修改历史、创建/更新/最后使用时间——列表中被截断的备注与看不到的历史在这里完整可读，不必进入编辑态。
 - **纯展示组件**：不写存储、不碰加密与会话；「编辑」仅向上抛出条目，由父级关闭抽屉并复用既有编辑弹窗流程，写入路径保持单一事实来源。
 - 密码默认掩码，点击眼睛才切换为明文；可见性是本地态，抽屉关闭动画结束即复位并清空历史列表，不留残余明文引用。网址经 `toNavigableUrl` 归一化后才作为链接使用。
-- 复制用户名 / 网址走 [clipboard.ts](../utils/clipboard.ts) 的 `copyTextToClipboard`，复制密码与历史密码走 `copySecretToClipboard`——按「剪贴板设置」的延时自动清除，清除成功/失败经回调提示（与侧边栏复制共用同一套机制，文案由调用方注入）。
+- 复制用户名 / 网址走 [clipboard.ts](../utils/clipboard.ts) 的 `copyTextToClipboard`，复制密码与历史密码走 `copySecretToClipboard`——按「剪贴板设置」的延时自动清除，清除成功/失败经回调提示。侧边栏的同名能力是另一套上下文内定时器（见「14 剪贴板自动清除」），两处只共享卡片的纯文本构造，不共享定时器。
+- 底部操作栏在「关闭」与「编辑」之间提供「分享卡片」：把该条目的用户名 / 密码 / 网址合成一段纯文本一次性复制（网址为空时省略该行），省去对方分段粘贴；因为含明文密码，同样受限时自动清除约束（该开关关闭时卡片明文会留在剪贴板，直至下次复制）。密码为空的条目同样完成复制，只是提示换成告警，判空与侧边栏共用 `hasShareCardPassword`。
 - 密码历史仅在「密码历史设置」启用时才动态导入配置并按需加载，避免打开抽屉即触发无谓解密。
 
 ### 24. 两步验证码接力

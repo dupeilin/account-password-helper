@@ -132,6 +132,7 @@
 - 💾 **Auto-save credentials**: Chrome-style capture with a save confirmation, smart dedup (identical credentials never re-prompt, a changed password triggers an "Update" confirmation); domain allow/block lists and "Never for this site", and the prompt flags weak or reused passwords inline
 - 🎯 **Exact domain matching**: every fill entry point and list shows only entries whose host exactly matches the current page, keeping dev / test / staging / prod apart
 - ➕ **Add in place & search beyond the site**: "+" in the side panel header saves credentials with the current domain prefilled; the search scope toggles between "This site" and "All entries", and off-site hits stay copyable, favoritable and editable
+- 📇 **Share card**: one click copies the username, password and URL as one plain-text block to the clipboard (the URL line is omitted when empty), from either the side panel row or the detail drawer; the card carries the plaintext password, so it is subject to the same timed clipboard clearing, and it only ever reaches your local clipboard with no network request
 
 ### 📦 Data Management
 

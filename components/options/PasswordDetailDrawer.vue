@@ -223,6 +223,13 @@
     <template #footer>
       <div class="detail-footer">
         <el-button @click="$emit('update:modelValue', false)">{{ t('common.close') }}</el-button>
+        <!-- 分享卡片：跨用户名/密码/网址三字段的整条动作，故置于底部而非某个字段行内 -->
+        <el-button
+          :icon="Share"
+          @click="copyShareCard"
+        >
+          {{ t('common.shareCard') }}
+        </el-button>
         <el-button
           type="primary"
           :icon="Edit"
@@ -237,11 +244,12 @@
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue';
-import { CopyDocument, Edit, View, Hide, StarFilled, Link } from '@element-plus/icons-vue';
+import { CopyDocument, Edit, View, Hide, StarFilled, Link, Share } from '@element-plus/icons-vue';
 import type { PasswordEntry } from '@/utils/types';
 import { formatDateTime } from '@/utils/dateFormat';
 import { getTagFullStyle, parseTags } from '@/utils/tagUtils';
 import { toNavigableUrl } from '@/utils/domain';
+import { buildShareCard, hasShareCardPassword } from '@/utils/shareCard';
 import { copySecretToClipboard, copyTextToClipboard } from '@/utils/clipboard';
 import { usePasswordHistory } from '@/composables/usePasswordHistory';
 import { logger } from '@/utils/logger';
@@ -270,7 +278,7 @@ const emit = defineEmits<{
   edit: [entry: PasswordEntry];
 }>();
 
-const { t } = useI18n();
+const { t, currentLocale } = useI18n();
 const { historyList, loadHistory, decryptHistoryPassword } = usePasswordHistory();
 
 /** 密码明文可见性（本地态，关闭抽屉即复位，不持久化） */
@@ -326,6 +334,36 @@ const copySecret = async (text: string): Promise<void> => {
     ElMessage.success(t('options.detail.copied'));
   } else {
     ElMessage.error(t('message.copyFailed'));
+  }
+};
+
+/**
+ * 复制「分享卡片」到剪贴板
+ *
+ * 把用户名 / 密码 / 网址编排为多行纯文本一次复制，便于直接粘贴给他人。
+ * 卡片含明文密码，因此必须走 `copySecretToClipboard`（与复制密码同受
+ * 「剪贴板设置」限时自动清除约束）；文本构造与侧边栏共用 `utils/shareCard`，
+ * 两个入口只在复制出口上不同。
+ */
+const copyShareCard = async (): Promise<void> => {
+  if (!props.entry) return;
+  const withPassword = hasShareCardPassword(props.entry);
+  const card = buildShareCard(
+    props.entry,
+    { username: t('common.username'), password: t('common.password'), url: t('common.url') },
+    currentLocale.value,
+  );
+  // 卡片含明文密码，失败时只记布尔结果，不输出内容
+  const ok = await copySecretToClipboard(card, notifyClipboardCleared);
+  if (ok) {
+    // 条目未填密码时卡片不含可用凭据，成功提示改为告警，避免误以为凭据已完整交付
+    if (withPassword) {
+      ElMessage.success(t('fill.shareCardCopied'));
+    } else {
+      ElMessage.warning(t('fill.shareCardNoPassword'));
+    }
+  } else {
+    ElMessage.error(t('fill.shareCardCopyFailed'));
   }
 };
 
