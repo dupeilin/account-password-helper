@@ -14,6 +14,7 @@ import { formatDateCompact, formatTimestampCompact } from '@/utils/dateFormat';
 import { DEFAULT_SORT, comparePasswordEntries, sortByChain, type SortCriterion } from '@/utils/passwordSort';
 import { isValidTotpInput } from '@/utils/totp';
 import { matchesKeyword, warmPinyinMatcher } from '@/utils/searchMatch';
+import { normalizeToHostname } from '@/utils/domain';
 import { useLocalOperationGuard } from '@/composables/useLocalOperationGuard';
 import { createPasswordFormRules } from '@/utils/formValidators';
 
@@ -78,6 +79,8 @@ export function usePasswordManagement(options: { validityForm: Ref<{ validityHou
   const favoriteOnly = ref(false);
   /** 标签筛选：选中标签集合（命中任一即保留，与搜索/收藏过滤为叠加关系） */
   const filterTags = ref<string[]>([]);
+  /** 网址筛选：选中域名集合（命中任一即保留，与标签/收藏/搜索为叠加关系） */
+  const filterUrls = ref<string[]>([]);
   const selectedIds = ref<string[]>([]);
   const isEditingPassword = ref(false);
   const editingPasswordId = ref<string>('');
@@ -100,7 +103,14 @@ export function usePasswordManagement(options: { validityForm: Ref<{ validityHou
   }));
 
   // 计算属性（过滤 + 排序，替代 el-table 客户端排序）
-  const filteredPasswords = computed(() => {
+
+  /**
+   * 命中关键词搜索与收藏过滤的条目（筛选下拉候选的基准集）
+   *
+   * 不含标签/网址筛选自身：下拉候选应反映「当前搜索语境下可选项」，
+   * 若叠加筛选自身会导致选中一个选项后其余候选被互相挤掉。
+   */
+  const searchFilteredPasswords = computed(() => {
     let result: PasswordEntry[] = passwords.value;
 
     if (debouncedSearchKeyword.value) {
@@ -113,8 +123,18 @@ export function usePasswordManagement(options: { validityForm: Ref<{ validityHou
       result = result.filter(p => p.favorite);
     }
 
+    return result;
+  });
+
+  const filteredPasswords = computed(() => {
+    let result: PasswordEntry[] = searchFilteredPasswords.value;
+
     if (filterTags.value.length > 0) {
       result = result.filter(p => parseTags(p.tag).some(tag => filterTags.value.includes(tag)));
+    }
+
+    if (filterUrls.value.length > 0) {
+      result = result.filter(p => filterUrls.value.includes(normalizeToHostname(p.url || '')));
     }
 
     // 始终按当前排序链排序（替代 el-table 客户端排序）
@@ -167,7 +187,7 @@ export function usePasswordManagement(options: { validityForm: Ref<{ validityHou
    * 与既有「筛选变化清空选中」策略一致：结果集语义已变，停留在原页码
    * 会让用户看不到命中结果的第一条。
    */
-  watch([debouncedSearchKeyword, favoriteOnly, filterTags, sortChain], () => {
+  watch([debouncedSearchKeyword, favoriteOnly, filterTags, filterUrls, sortChain], () => {
     currentPage.value = 1;
   });
 
@@ -227,20 +247,29 @@ export function usePasswordManagement(options: { validityForm: Ref<{ validityHou
   });
 
   /**
-   * 标签筛选变化同样视为过滤条件变化，需清空选中（与收藏过滤策略一致）。
+   * 标签/网址筛选变化同样视为过滤条件变化，需清空选中（与收藏过滤策略一致）。
    * 但多选下拉展开期间每次勾选项都会触发变化：若此时立即清空选中，
    * 批量按钮会在交互中途消失引起布局跳动。因此展开期间仅记录待清空标记，
-   * 待下拉收起时（见 handleTagFilterVisibleChange）统一清空。
+   * 待下拉收起时（见 handleTagFilterVisibleChange / handleUrlFilterVisibleChange）统一清空。
    */
   let tagFilterDropdownVisible = false;
+  let urlFilterDropdownVisible = false;
   let pendingSelectionClear = false;
-  watch(filterTags, () => {
-    if (tagFilterDropdownVisible) {
+  watch([filterTags, filterUrls], () => {
+    if (tagFilterDropdownVisible || urlFilterDropdownVisible) {
       pendingSelectionClear = true;
     } else {
       selectedIds.value = [];
     }
   });
+
+  /** 两个筛选下拉均已收起时，补执行交互期间挂起的选中清空 */
+  const flushPendingSelectionClear = () => {
+    if (!tagFilterDropdownVisible && !urlFilterDropdownVisible && pendingSelectionClear) {
+      pendingSelectionClear = false;
+      selectedIds.value = [];
+    }
+  };
 
   /**
    * 标签筛选下拉展开/收起回调
@@ -250,10 +279,13 @@ export function usePasswordManagement(options: { validityForm: Ref<{ validityHou
    */
   const handleTagFilterVisibleChange = (visible: boolean) => {
     tagFilterDropdownVisible = visible;
-    if (!visible && pendingSelectionClear) {
-      pendingSelectionClear = false;
-      selectedIds.value = [];
-    }
+    flushPendingSelectionClear();
+  };
+
+  /** 网址筛选下拉展开/收起回调（语义与标签筛选一致） */
+  const handleUrlFilterVisibleChange = (visible: boolean) => {
+    urlFilterDropdownVisible = visible;
+    flushPendingSelectionClear();
   };
 
   /**
@@ -262,11 +294,65 @@ export function usePasswordManagement(options: { validityForm: Ref<{ validityHou
    */
   const availableTags = computed<string[]>(() => collectAllTags(passwords.value));
 
+  /**
+   * 标签筛选下拉的候选集（搜索语境）
+   *
+   * 随关键词搜索/收藏过滤动态收窄：搜索结果里没有的标签不再出现在下拉中，
+   * 避免用户选中一个必然零结果的选项。已选中的标签并入候选（保持可取消勾选），
+   * 即使它不在当前搜索结果里，chip 也不会丢失。
+   * 注意与 availableTags 区分：表单/批量编辑的候选始终来自全量条目。
+   */
+  const filterTagOptions = computed<string[]>(() => {
+    const options = collectAllTags(searchFilteredPasswords.value);
+    const known = new Set(options);
+    return [...options, ...filterTags.value.filter(tag => !known.has(tag))];
+  });
+
+  /**
+   * 网址筛选下拉的候选集（搜索语境）
+   *
+   * 与 filterTagOptions 同理：基于当前搜索/收藏过滤的结果集聚合去重 hostname，
+   * 并并入已选中项保证可取消。
+   */
+  const filterUrlOptions = computed<string[]>(() => {
+    const hosts = new Set<string>();
+    for (const p of searchFilteredPasswords.value) {
+      const host = normalizeToHostname(p.url || '');
+      if (host) hosts.add(host);
+    }
+    const options = [...hosts].sort();
+    const known = new Set(options);
+    return [...options, ...filterUrls.value.filter(url => !known.has(url))];
+  });
+
   // 批量移除标签等操作后候选集可能不再包含已选筛选标签：
-  // 及时剔除失效项，避免筛选下拉隐藏后残留过滤条件造成「隐形空过滤」
+  // 及时剔除失效项，避免筛选下拉隐藏后残留过滤条件造成「隐形空过滤」。
+  // 注意以全量候选（availableTags）为准而非搜索语境候选：搜索只是临时视图收窄，
+  // 不应据此清掉用户的筛选选择。
   watch(availableTags, tags => {
     if (filterTags.value.some(selected => !tags.includes(selected))) {
       filterTags.value = filterTags.value.filter(selected => tags.includes(selected));
+    }
+  });
+
+  /**
+   * 下拉候选网址列表
+   * 从所有密码条目聚合去重的 hostname（规范化：忽略协议/路径/大小写），
+   * 空 URL 条目不产生候选。按字典序排列保证选项稳定。
+   */
+  const availableUrls = computed<string[]>(() => {
+    const hosts = new Set<string>();
+    for (const p of passwords.value) {
+      const host = normalizeToHostname(p.url || '');
+      if (host) hosts.add(host);
+    }
+    return [...hosts].sort();
+  });
+
+  // 与标签筛选同理：删除条目导致候选网址失效时剔除已选筛选项，避免隐形空过滤
+  watch(availableUrls, urls => {
+    if (filterUrls.value.some(selected => !urls.includes(selected))) {
+      filterUrls.value = filterUrls.value.filter(selected => urls.includes(selected));
     }
   });
 
@@ -991,6 +1077,7 @@ export function usePasswordManagement(options: { validityForm: Ref<{ validityHou
     tableLoading,
     favoriteOnly,
     filterTags,
+    filterUrls,
     filteredPasswords,
     currentPage,
     pageSize,
@@ -998,6 +1085,9 @@ export function usePasswordManagement(options: { validityForm: Ref<{ validityHou
     handlePageSizeChange,
     sortChain,
     availableTags,
+    availableUrls,
+    filterTagOptions,
+    filterUrlOptions,
     tagArray,
     // 方法
     loadPasswords,
@@ -1009,6 +1099,7 @@ export function usePasswordManagement(options: { validityForm: Ref<{ validityHou
     handleRowClassName,
     handleSelectionChange,
     handleTagFilterVisibleChange,
+    handleUrlFilterVisibleChange,
     openPasswordDialog,
     editPassword,
     resetPasswordForm,

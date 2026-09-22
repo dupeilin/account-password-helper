@@ -30,6 +30,7 @@
   "options.filter.searchPlaceholder": "Search username, tag, note or URL (pinyin supported)",
   "options.filter.batchDelete": "Delete selected ({count})",
   "options.filter.tagPlaceholder": "Filter by tag",
+  "options.filter.urlPlaceholder": "Filter by URL",
   "options.filter.batchEditTags": "Edit tags ({count})",
   "options.filter.batchExportSelected": "Export selected ({count})",
   "options.batchTag.title": "Batch edit tags",

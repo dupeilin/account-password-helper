@@ -52,9 +52,12 @@
         v-model:search-keyword="searchKeyword"
         v-model:favorite-only="favoriteOnly"
         v-model:filter-tags="filterTags"
+        v-model:filter-urls="filterUrls"
         :selected-count="selectedIds.length"
-        :available-tags="availableTags"
+        :tag-options="filterTagOptions"
+        :url-options="filterUrlOptions"
         @tag-filter-visible-change="handleTagFilterVisibleChange"
+        @url-filter-visible-change="handleUrlFilterVisibleChange"
         @batch-delete="batchDelete"
         @batch-edit-tags="showBatchTagDialog = true"
         @batch-export-selected="batchExportSelected"
@@ -629,6 +632,7 @@ const {
   tableLoading,
   favoriteOnly,
   filterTags,
+  filterUrls,
   filteredPasswords,
   currentPage,
   pageSize,
@@ -636,6 +640,8 @@ const {
   handlePageSizeChange,
   sortChain,
   availableTags,
+  filterTagOptions,
+  filterUrlOptions,
   tagArray,
   loadPasswords,
   handleColumnSort,
@@ -646,6 +652,7 @@ const {
   handleRowClassName,
   handleSelectionChange,
   handleTagFilterVisibleChange,
+  handleUrlFilterVisibleChange,
   openPasswordDialog,
   editPassword,
   resetPasswordForm,
