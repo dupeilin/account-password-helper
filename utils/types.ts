@@ -353,6 +353,17 @@ export interface FloatingButtonConfig {
    */
   passwordVisibilityToggle: boolean;
   /**
+   * 是否启用跨子域名匹配（侧边栏本站列表与内联下拉的展示放宽），默认 true
+   *
+   * 开启后：当前站点无精确匹配账号时，按「同子域端口不同 → 同主域其他子域
+   * （端口一致）→ 主域名 → 同主域其他子域（无端口）→ 端口不一致兜底」逐级
+   * 纳入条目并显示来源徽标。关闭后回到仅精确匹配 + 空 URL 通用条目的历史行为。
+   *
+   * 安全边界：仅放宽「展示」，一键填充 / 自动保存 / 右键菜单等自动路径
+   * 仍要求精确 hostname 匹配，不会把降级来的凭据自动填入当前页。
+   */
+  crossSubdomainMatch: boolean;
+  /**
    * 页面填充模式（侧边栏 / 页面内联下拉），默认 'inline'（仅新安装生效；
    * 存量用户由升级钩子 freezeLegacyFillDefaults 冻结为历史的 'sidepanel' 行为）
    */
@@ -453,6 +464,13 @@ export interface MatchingAccountMeta {
    * 隐私风险；无图标/获取失败时为空字符串，内容脚本降级渲染钥匙图标。
    */
   favicon: string;
+  /**
+   * 站点匹配级别（跨子域名分级匹配开启时由 background 注入）
+   *
+   * 0=精确（无徽标），1~5=降级命中（内联下拉渲染来源徽标）。
+   * 缺失视为 0，旧版本内容脚本可安全忽略。
+   */
+  matchLevel?: number;
 }
 
 /**

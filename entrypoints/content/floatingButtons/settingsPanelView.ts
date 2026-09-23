@@ -43,6 +43,8 @@ type PanelMessageKey =
   | 'autoTriggerTip'
   | 'passwordVisibility'
   | 'passwordVisibilityTip'
+  | 'crossSubdomainMatch'
+  | 'crossSubdomainTip'
   | 'opacity';
 
 /** 面板内建双语文案（tip 类文案含 highlight-tip 高亮标记，需以 innerHTML 渲染） */
@@ -62,6 +64,9 @@ const PANEL_MESSAGES: Record<PanelLocale, Record<PanelMessageKey, string>> = {
     passwordVisibility: '密码显示切换',
     passwordVisibilityTip:
       '开启后，密码输入框内将显示眼睛图标按钮，点击可切换密码明文/密文<span class="highlight-tip">（注：页面如有自带的眼睛图标会重叠显示）</span>',
+    crossSubdomainMatch: '跨子域名匹配',
+    crossSubdomainTip:
+      '开启后，本站无精确账号时侧边栏与内联列表会展示主域名及同主域其他子域的账号<span class="highlight-tip">（带徽标提示；一键填充等自动路径仍要求精确匹配）</span>',
     opacity: '按钮透明度',
   },
   en: {
@@ -79,6 +84,9 @@ const PANEL_MESSAGES: Record<PanelLocale, Record<PanelMessageKey, string>> = {
     passwordVisibility: 'Password visibility toggle',
     passwordVisibilityTip:
       'When enabled, an eye icon appears inside password fields to toggle between plain and masked text<span class="highlight-tip"> (note: it may overlap the site&#39;s own eye icon)</span>',
+    crossSubdomainMatch: 'Cross-subdomain matching',
+    crossSubdomainTip:
+      'When enabled, the sidebar and inline lists also show main-domain and sibling-subdomain accounts if the exact site has none<span class="highlight-tip"> (badged; automatic paths like quick fill still require an exact match)</span>',
     opacity: 'Button opacity',
   },
 };
@@ -574,6 +582,14 @@ export function getSettingsPanelHTML(config: FloatingButtonConfig, locale: Panel
       <div class="setting-tip" data-i18n="passwordVisibilityTip">${msg.passwordVisibilityTip}</div>
 
       <div class="setting-item">
+        <span class="setting-label" data-i18n="crossSubdomainMatch">${msg.crossSubdomainMatch}</span>
+        <div class="switch ${config.crossSubdomainMatch ? 'active' : ''}" data-setting="crossSubdomainMatch">
+          <div class="switch-handle"></div>
+        </div>
+      </div>
+      <div class="setting-tip" data-i18n="crossSubdomainTip">${msg.crossSubdomainTip}</div>
+
+      <div class="setting-item">
         <span class="setting-label" data-i18n="opacity">${msg.opacity}</span>
         <div class="slider-container">
           <div class="slider" data-setting="opacity">
@@ -664,10 +680,11 @@ export function bindSettingsPanelView(
   cleanups.push(() => panelRoot.removeEventListener('click', onPanelClick));
 
   // 布尔 switch
-  const switchKeys: Array<'visible' | 'autoTriggerLogin' | 'passwordVisibilityToggle'> = [
+  const switchKeys: Array<'visible' | 'autoTriggerLogin' | 'passwordVisibilityToggle' | 'crossSubdomainMatch'> = [
     'visible',
     'autoTriggerLogin',
     'passwordVisibilityToggle',
+    'crossSubdomainMatch',
   ];
   switchKeys.forEach(key => {
     const el = panelRoot.querySelector(`[data-setting="${key}"]`) as HTMLElement | null;
