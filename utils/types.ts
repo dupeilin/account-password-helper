@@ -364,6 +364,17 @@ export interface FloatingButtonConfig {
    */
   crossSubdomainMatch: boolean;
   /**
+   * 填充账号密码后是否自动填入两步验证码（安全令/TOTP），默认 false
+   *
+   * 开启后：点击条目填充账号密码成功时，若该条目配置了两步验证，则自动把
+   * 当前动态码写入页面验证码字段（单页登录场景免去再点一次）。
+   *
+   * 安全边界：动态码仍由 background 现算后下发，内容脚本始终不持有 TOTP 密钥；
+   * 且仅在账号密码填充成功的同一次操作内触发，不改变既有的两步接力（跨页）逻辑。
+   * 默认关闭以保持历史交互不变。
+   */
+  autoFillTotp: boolean;
+  /**
    * 页面填充模式（侧边栏 / 页面内联下拉），默认 'inline'（仅新安装生效；
    * 存量用户由升级钩子 freezeLegacyFillDefaults 冻结为历史的 'sidepanel' 行为）
    */
@@ -418,6 +429,13 @@ export interface FillPasswordData {
   username: string;
   password: string;
   autoLogin?: boolean;
+  /**
+   * 目标条目 ID（可选）
+   *
+   * 仅用于「自动填入两步验证码」开关开启时，内容脚本据此经 background 现算动态码；
+   * 未透传（或开关关闭）时跳过自动填码，行为与历史完全一致。
+   */
+  entryId?: string;
 }
 
 /**
