@@ -284,6 +284,7 @@ const floatingButtonStore = createConfigStore<FloatingButtonConfig>(
     autoShowSidepanel: false,
     autoTriggerLogin: false,
     passwordVisibilityToggle: false,
+    autoFillTotp: false,
     fillMode: 'inline',
     theme: DEFAULT_THEME,
     penetrateShadow: true,
