@@ -129,6 +129,23 @@ coverage/
 docs/blog/zh/imgs
 docs/blog/en/imgs
 
+.idea/
+
+# Local cloud-sync provider credentials used for manual API testing (never commit)
+b.txt
+probe-tencent-smartsheet.bat
+dump-tencent-payloads.bat
+.tmp-payloads/
+
+# Local scratch files and session notes
+$null
+.pnpm-store/
+vl.txt
+vp.txt
+vt2.txt
+history_202609231641.md
+idea.md
+
 # Playwright E2E 产物与本地会话快照（storageState 可能带入扩展 origin 数据，禁止入库）
 test-results/
 playwright-report/

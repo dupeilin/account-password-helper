@@ -556,7 +556,40 @@ graph TB
 - **实时切换链路**：两套体系都监听 `storage.onChanged` 的 `app_locale` 变更并通知订阅者；右键菜单标题按用户语言渲染，语言切换时整体重建。
 - **一致性守卫**：`tests/utils/i18nBundles.test.ts` 校验中英文 key 集一致与 bundle 注册，`tests/utils/i18nLiteParity.test.ts` 校验轻量 i18n 中英对齐；新增/删除/重命名 key 必须两套语言同步，否则测试失败。manifest 文案另走 `public/_locales/{zh_CN,en}/messages.json`。
 
-### 27. 身份信息库
+### 27. 云文档同步（腾讯智能表 / 飞书多维表格 / WebDAV）
+
+- 入口在密码管理页「数据管理 → 云文档同步」，单弹窗内用 Tab 切换飞书 / 腾讯 / WebDAV，三平台凭证、目标与快照完全独立，切换不清空其他平台数据。
+- **仅手动触发，默认关闭**，无定时/后台自动同步；执行位置在 Options 页面内直接 `fetch`，`host_permissions: ['<all_urls>']` 已覆盖三平台域名（WebDAV 为用户自选服务器），**不新增任何浏览器权限**，也不走 Background 消息路由。
+- **两种模式**：密文（默认，推荐）为本地→云端单向备份 + 手动恢复；明文为行级双向同步（仅表格平台）。明文切换需强风险确认，且每次同步前必须通过 `promptAndVerifyMasterPassword` 重新验证主密码。WebDAV **仅支持密文模式**（`normalizeProvider` 强制 `mode='encrypted'`）。
+- **密文模式（表格平台）**：整库加密后按阈值分片（默认 48000 字符，超限自动减半降级），每片记录 `partHash`、整库记录 `snapshotHash` 形成双层校验链；恢复时按 `snapshotGroupId` 聚合、逐片校验后才解密，按 `id` 增量合并且**不删除本地任何条目**。版本保留默认 3 份，可在备份后自动清理超期版本与孤儿分片。
+- **WebDAV 密文备份（单文件）**：整库加密为**单个 `.aphdav` 文件**（`aph-<UTC时间戳14位>-<6位随机>.aphdav`，字典序即时间序）PUT 到用户目录下的 `aph-backup/` 子目录，单文件 PUT 原子、失败不产生半成品；恢复校验链为结构校验 → `snapshotHash` → AES-GCM 认证 → 载荷逐条校验，同样按 `id` 增量合并、**绝不删除本地条目**。版本保留复用全局 `keepVersions`，超出保留数的旧文件在备份后自动清理（清理失败不回滚备份，仅记入报告）。协议实现（[adapters/webdav.ts](../utils/cloudSync/adapters/webdav.ts)）：PROPFIND 响应按 `localName` 解析（兼容各服务器命名空间前缀差异）、MKCOL 201/405 均视为成功（幂等）、DELETE 404 视为成功、仅操作 `aph-*.aphdav` 文件绝不误删用户其他文件、下载 50MB 上限防内存耗尽；鉴权 Basic 为主、Bearer Token 可选（非空优先）。**传输安全门**：http 且非 localhost 时必须用户显式勾选确认（`allowInsecure` 持久化到 target），且每次备份/恢复报告常驻 `insecureTransport` 警告；安全门在适配器与编排层独立重算，不信任 UI 单侧判断。`DOMParser` 为 Window API，WebDAV 模块**仅可在 Options 页面使用**，严禁被 background/content 入口 import（构建产物已验证 `background.js` 不含 webdav 代码）。
+- **适配器双抽象**：`TableAdapter`（表格平台：recordId/字段/单元格语义）与 `FileStorageAdapter`（文件协议：testConnection/ensureDirectory/listFiles/putFile/getFile/deleteFile）并列，文件协议不硬套表格语义；`runContext.ts` 提供两路编排共享的 `loadReadyContext`/`emptyStats`/`buildReport` 基元。所有 provider 分派为穷尽式 `switch` + `never` 兜底，新增平台时 TS 编译期强制补全分支（`tests/utils/cloudSync.providerExhaustive.test.ts` 守卫）。
+- **明文模式**：以 `PasswordEntry.id` 为主键、云端 `recordId` 为平台内部标识，通过「本地 / 云端 / 本地快照」三方 diff 判定推送、拉取、删除、冲突；UI 提供【推送到表格】【从表格拉取】【立即同步】三个手动动作，前两者只执行对应方向的数据动作，双向动作才在冲突时按 LWW（本地 `updateTime` vs 云端 record 修改时间）合并。本地删→删云端行，云端删→本地条目进回收站（复用 `trashManager`，可恢复），无业务 ID 的云端新增回退 `url + username` 判重；带业务 ID 且本地/快照都未见过的新增行视为其他设备写入，拉取时保留原业务 ID，下一轮可直接匹配，仅推送模式跳过。
+- **空本地保护**：明文模式下若本地条目为空而云端仍有行，【推送到表格】与【立即同步】会先要求用户确认清空线上用户列表表格；确认后批量删除云端行并清空本地快照，取消则本轮终止。【从表格拉取】不触发删除，避免误删远端数据。
+- **快照**：本地快照存 `chrome.storage.local`，按 `provider + docKey` 隔离（WebDAV 的 docKey 为 `backupDirUrl`），仅保存内容哈希、`recordId`/文件名与同步时间；哈希范围明确**不含 ID / updateTime / 云端时间**，避免推送刷新云端时间后被误判为云端变更。
+- **凭证安全**：飞书 `app_id` / `app_secret`、腾讯 `client_id` / `open_id` / `access_token` 与 WebDAV `username` / `password` / `bearerToken` 以 AES-256-GCM 加密后存 `chrome.storage.local`，密钥复用会话数据密钥（`getSessionDataKey`），锁定后不可解、修改主密码后提示重新录入；飞书 `tenant_access_token` 仅内存缓存并在过期前 30s 预刷新，绝不持久化。
+- **并发保护**：任务互斥锁存 `chrome.storage.session`（跨 Options 页面实例生效，内存 Map 无法做到），按 `provider:docKey` 加锁，10s 心跳、30s 心跳超时判定死锁并强制抢占，所有退出路径在 `finally` 释放锁。
+- **平台适配**：`adapters/` 统一屏蔽平台差异——飞书 Bitable V1（tenant token、`automatic_fields` 取 `last_modified_time`、批量 ≤500、`1254xxx` 错误码）、腾讯智能表 OpenAPI v2（三 Header 鉴权、文本字段数组包对象格式、`updateTime` 字符串转毫秒、增删改查共用同一 POST 路径靠 body 键区分、`10302/10303/10313/37019` 错误码）、WebDAV（HTTP 状态码全表映射：401→invalidCredential、403/407→permission、404/409→notFound、413→tooLarge、423→writeConflict、429→rateLimit、507→quota 且不重试）。表结构前置校验，被外部篡改时终止同步并告警，**绝不自动修改云端表结构**。
+- **表格平台私有化部署**：飞书 `FeishuTarget.baseUrl` 与腾讯 `TencentTarget.baseUrl` 保存归一化后的开放平台 API 地址（`null` = 官方地址），适配器分别按实例地址拼接 `/open-apis/...` 或 `/openapi/...`。两者共用 `adapters/serverAddress.ts` 的地址归一与传输安全门：HTTPS 直接放行，`localhost`/`127.0.0.1`/`[::1]` 的 HTTP 仅用于本机联调，其余 HTTP 必须由用户显式确认并持久化 `allowInsecure`；非法地址归一为 `notFound` 且**绝不静默回退官方域名**（否则私有化凭证会被发往公网端点）。支持网关路径前缀，配置自定义地址后文档链接解析放宽对应平台的域名白名单；`baseUrl` 不参与 `docKey`，旧配置缺字段时由 `normalizeProvider` 补齐安全默认值，既有快照与任务锁键名保持不变。
+- **数据边界**：云端行与云端文件一律按不可信输入校验（类型、长度、非法字符），失败行跳过并计入报告；审计日志执行字段白名单（仅时间戳、provider、模式、操作类型、业务 ID、哈希、`recordId`、统计与错误码），FIFO 100 条，绝不记录 token、密码、TOTP、用户名或网址。
+- **范围外**：不做定时/自动同步，不做原生多设备并发同步（快照仅存本机，推荐每台设备独立专属云端表/目录），不做收藏/排序/使用频次同步，不做 SidePanel 入口；WebDAV 不做明文同步、分片与自动分片降级、WebDAV LOCK/UNLOCK、自定义请求头与服务器端差量上传。
+
+### 28. 树形分组（Options 管理页）
+
+**数据结构**：邻接表独立存储。`password_groups` 键存扁平数组 `[{ code, name, parentCode, order }]`，一级分组 `parentCode = '-1'`（虚拟根）；条目经 `PasswordEntry.groupId` 一对一归属分组，缺失、悬空或指向已删除分组时归一到虚拟「未分组」节点。分组仅含组织维度，不加密；`groupId` 列入 `METADATA_FIELDS` 白名单，归组走元数据轻量路径，不解密重加密。
+
+**模块分层**：
+
+- `utils/groupTree.ts`：纯函数层（建树 / 全路径 / 子孙聚合 / 树搜索 / 路径建组 / 导入合并），无 IO 可独立测试；
+- `utils/storage/groupManager.ts`：CRUD 存储层，删除分组支持「条目移入未分组」与「条目进回收站」两种语义；
+- `composables/usePasswordManagement.ts`：`selectedGroupCode` 驱动过滤链最前置的分组过滤（本级 + 子孙聚合），并为每行注入 `groupPath` 供表格分组列渲染与排序；
+- `components/options/GroupTreePanel.vue`：左栏树（分组名搜索仅过滤树、不影响右侧列表），承载树内拖拽与表格行拖入归组（自定义 MIME `application/x-aph-entry-ids` 区分两类拖拽）。
+
+**搜索联动**：左侧树搜索只过滤分组名（保留命中节点祖先链）；右侧主搜索在选中分组范围内做 AND 过滤——选根为全库、选具体分组为本级 + 子孙、选未分组为无归属条目。
+
+**数据通道**：`.aph` 备份升 v2（顶层 `groups` + 条目 `groupId`，v1 导入归未分组）；JSON 同口径；CSV / Excel 以全路径列交换（导入按路径逐级建组，同名同级复用）；云同步明文表 9 字段含「分组」列（见云同步规格 V1.3），密文快照与 WebDAV 单文件也携带完整分组树。导入的分组 code 一律重新生成并按同名同级复用合并，避免跨设备 code 撞车。
+
+### 29. 身份信息库
 
 - **定位与独立性**：独立的「个人信息收藏夹」，与密码库完全解耦——存放姓名、证件号、手机号、邮箱、住址、银行卡信息（卡号 / 发卡行 / 持卡人 / 有效期 / CVV）与自定义字段，解决证件号、银行卡号等非登录凭据无处安放的问题。入口在管理页「数据管理 → 身份信息库」，打开前需主密码复验（纯门槛，刻意不使用返回的密码，防「会话已解锁但离座」时旁人一次性看到全部身份信息）。不改 `utils/types.ts` / `passwordCrud.ts` / sidepanel / popup / content 任何既有路径，唯一跨域触点是换主密码。
 - **第 4 个加密域**：[identityCrud.ts](../utils/storage/identityCrud.ts) 与密码库平行，整块加密（一个 `encryptedPayload` blob，PBKDF2-SHA256/600k + AES-256-GCM），落盘形状仅 `id / encryptedPayload / createTime / updateTime` 四个不可识别明文键，其余字段（含类别）一律进密文，避免泄露「用户存了一张银行卡」这类事实。存储键 `personal_identity_infos`，无新权限；`updateTime` 兼作并发令牌。
@@ -567,7 +600,7 @@ graph TB
 - **备份**：[backup.ts](../utils/identity/backup.ts) 输出 `.aphid` 容器（`salt‖iv‖ciphertext`），以 `kind` 标记与 `.aph` 密码备份互斥（导错文件有明确提示）；导入按 `id` 合并（同 id 取较新 `updateTime`）并显式报告「新增/更新/跳过」计数。导出支持**勾选子集**（`resolveExportEntries`：未勾选=全部，勾选=所选，成功后清空勾选复位默认）。另提供**可选的明文 `.json` 导出/导入**（`buildIdentityPlaintextJson` / `exportIdentityPlaintext` / `parseIdentityPlaintextJson`）：明文非加密、复用 `.aphid` 数据结构（导入走同一份 `parseIdentityBackupData` 校验并按 `id` 合并），读写均须主密码复验 + 风险二次确认，属隐私边界的例外通道（长期留存仍以加密 `.aphid` 为首选）。身份库**不参与**既有自动备份与邮箱备份（独立性边界），弹窗内常驻 `el-alert` 提示定期手动导出加密备份（根治列 Phase 2）。
 - **换主密码**：身份数据并入 [changeMasterPassword.ts](../utils/storage/changeMasterPassword.ts) 同一次原子 `set`（读取置于任何写入之前），`reencryptAll` 解密失败的单条原样保留不丢弃，与既有三域口径一致。
 
-### 28. 站点级填充规则
+### 30. 站点级填充规则
 
 - **定位**：面向自动检测失败的站点（Web Components、非常规 name/placeholder 的登录页）提供人工兜底——为单个域名指定账号 / 密码字段的 CSS 选择器，并按站点控制影子 DOM 穿透。数据落 [siteRules.ts](../utils/storage/siteRules.ts) 的 `site_rules` 键，形状为 `Record<domain, SiteRule>`，是**明文非敏感元数据**（域名 + 选择器 + 布尔开关），因此不进加密域、不参与 `.aph` 备份与邮箱备份，内容脚本也能直读；跨机迁移走下文的明文 JSON 通道。
 - **三个入口**：Options「安全设置 → 站点规则」、命令面板（`siteRules`）、以及内容脚本填充失败气泡（`reason='no_form'` 时由 [FillFailurePrompt.ts](../entrypoints/content/FillFailurePrompt.ts) 就地引导）。后一条经 `OPEN_OPTIONS_AND_SITE_RULES` → [messageRouter.ts](../entrypoints/background/messageRouter.ts) → `openOptionsAndSendMessage` 回到选项页；气泡自带一个 Closed Shadow DOM 宿主挂在 `documentElement` 上、主题令牌由 `applyThemeTokensToHost` 内联写入（同一约定也适用于 `SavePasswordPrompt`；原生通知条与密码可见性切换按钮属于 light DOM 一档，不是同一隔离约定，见「Content Script 运行时约束」的样式隔离）。
@@ -581,7 +614,7 @@ graph TB
 - **成本边界**：跨 shadow 边界的查询根由 `collectShadowQueryRoots` 每轮检测只 BFS 一次（`SHADOW_ROOT_SCAN_BUDGET` 节点预算，超限时输出可辨识日志），账号 / 密码两条选择器复用同一组根；穿透关闭时该函数直接短路返回 `[document]`，连这次 BFS 都不发生。
 - **回归口径**：[siteRulesValidation.test.ts](../tests/utils/siteRulesValidation.test.ts) 钉规范化与选择器边界，[formDetector.siteRule.test.ts](../tests/content/formDetector.siteRule.test.ts) 钉权威覆盖 / 缓存降级 / 穿透判定的三态与适用边界 / 首轮竞态 / 监听与清理，[formDetector.shadow.test.ts](../tests/content/formDetector.shadow.test.ts) 钉「启发式不跨边界、选择器可跨 open 根、closed 根不可见、穿透开关关掉后选择器只在主树生效」这条范围口径，[senderValidation.test.ts](../tests/background/senderValidation.test.ts) 与 [useRuntimeMessageHandler.siteRules.test.ts](../tests/composables/useRuntimeMessageHandler.siteRules.test.ts) 钉消息链路的域名收口与分发契约，[siteRulesTransfer.test.ts](../tests/utils/siteRulesTransfer.test.ts) 钉信封与裸形态两种入口、逐条剔除、体积与条数上限、错误码分流、合并计数与失败不落盘。
 
-### 29. 跨子域名匹配档位
+### 31. 跨子域名匹配档位
 
 - **定位与默认**：解决「同一根域名下的账号在子域名处处可用」（`qq.com` 的账号在 `mail.qq.com` / `music.qq.com` 也能填），同时不推翻 2026-07 为多测试环境隔离引入的精确 host 口径。三档为**包含关系**且缺省最严格：`off`（仅精确匹配，迁移前行为）⊂ `wildcard`（追加用户显式写成 `*.qq.com` 的通配条目）⊂ `sameMainDomain`（再追加主域名 apex 与同主域其他子域）。放宽只能由用户在 Options 显式选择，默认值与旧版本逐条一致。
 - **匹配单一真源**：[domain.ts](../utils/domain.ts) 的 `resolveMatchTier(currentHost, storedUrl, mode)` 返回 `MatchTier`（0 精确 / 1 通配 / 2 主域名 / 3 其他子域 / 4 空 URL）或 `-1`，数字同时就是排序权重。侧边栏本站范围（[passwordFilter.ts](../utils/passwordFilter.ts) 的 `matchesSiteScope` / `filterEntriesByScope`，也是「能否填充当前页」的判据）与内联下拉、一键填充（[passwordSort.ts](../utils/passwordSort.ts) 的 `filterAndSortEntriesForDomain`）都经它，杜绝「下拉里有、侧边栏没有」或两处排序分叉；`off` 档下集合与顺序与跨子域功能引入前逐条一致。

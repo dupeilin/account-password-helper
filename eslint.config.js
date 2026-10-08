@@ -11,6 +11,7 @@ export default [
       '.wxt/**',
       '.qoder/**',
       '.husky/**',
+      '.idea/**',
       'node_modules/**',
       'scripts/**',
       // 性能测量脚本的私有产物：构建快照与测量结果（体积大、非源码，扫到会淹没真实告警）
