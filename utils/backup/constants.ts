@@ -47,5 +47,10 @@ export const MAX_TAG_LEN = 256;
 export const MAX_REMARK_LEN = 8192;
 export const MAX_TOTP_LEN = 2048;
 
-/** `.aph` / `.json` 备份容器可接受的最高版本号（高于此值属前向不兼容文件） */
-export const MAX_BACKUP_VERSION = 1;
+/**
+ * `.aph` / `.json` 备份容器可接受的最高版本号（高于此值属前向不兼容文件）
+ *
+ * v2 = 容器携带 `groups` 分组树、条目携带 `groupId`（与 `utils/backupExport.ts` 的
+ * `BACKUP_VERSION` 同源）；v1 为无分组的旧导出，仍按向后兼容读取。
+ */
+export const MAX_BACKUP_VERSION = 2;

@@ -6,6 +6,7 @@
   "excel.header.tag": "Tag",
   "excel.header.remark": "Remark",
   "excel.header.totp": "TOTP",
+  "excel.header.group": "Group",
   "excel.header.createTime": "Created At",
   "excel.header.updateTime": "Updated At",
   "excel.template.exampleTag": "Work",

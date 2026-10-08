@@ -42,7 +42,14 @@ export class PasswordBackupError extends Error {
 }
 
 /** 导入后的条目形状（与既有 parseCSV/parseJSON/importEncryptedBackup 契约一致） */
-export type ImportedPasswordEntry = Omit<PasswordEntry, 'id' | 'order'>;
+export type ImportedPasswordEntry = Omit<PasswordEntry, 'id' | 'order'> & {
+  /** CSV / JSON 路径格式携带的分组全路径 */
+  groupPath?: string;
+};
+
+/** 分组导入字段的防御性长度上限 */
+const MAX_GROUP_ID_LEN = 128;
+const MAX_GROUP_PATH_LEN = 512;
 
 /**
  * 读取受限文本字段：仅接受字符串或有限数（其余类型视为损坏/伪造，抛 INVALID_ENTRY）。
@@ -117,6 +124,10 @@ export function validateAndBoundEntries(rows: unknown): ImportedPasswordEntry[] 
     };
     const favorite = readOptionalBool(row.favorite);
     if (favorite !== undefined) entry.favorite = favorite;
+    const groupId = readBoundedText(row.groupId, MAX_GROUP_ID_LEN);
+    if (groupId) entry.groupId = groupId;
+    const groupPath = readBoundedText(row.groupPath, MAX_GROUP_PATH_LEN);
+    if (groupPath) entry.groupPath = groupPath;
     if (entry.username) result.push(entry);
   }
 

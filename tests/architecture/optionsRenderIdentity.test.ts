@@ -182,7 +182,11 @@ describe('管理页高亮单元件的实例成本', () => {
 
 describe('管理页逐行文案的解析次数', () => {
   /** 逐行插槽里那 11 处静态文案绑定（密码列 1 + 操作列 5 按钮 × `aria-label`/`data-tip`） */
-  const perRowBindings = [...TABLE_TPL.matchAll(/:(?:aria-label|data-tip)="([^"]*)"/g)].map(m => m[1]);
+  // 扫描口径是整个 template，因此表头「列设置」按钮（分组列补充功能）也会被抽到；它取自
+  // setup 里的 computed、一次整表渲染只解析一次，不属逐行成本，故按名排除（仍受下一条约束）。
+  const perRowBindings = [...TABLE_TPL.matchAll(/:(?:aria-label|data-tip)="([^"]*)"/g)]
+    .map(m => m[1])
+    .filter(value => value !== 'groupColumnSettingsLabel');
 
   it('抽到全部逐行文案绑定（写法漂移时让守卫变红，而不是静默空跑）', () => {
     expect(perRowBindings.length).toBe(11);

@@ -1,4 +1,4 @@
-import type { PasswordEntry } from '@/utils/types';
+import type { ImportedPasswordEntry, ParsedImportData } from '@/utils/groupTree';
 import { logger } from '@/utils/logger';
 import { type CsvColumnMapping, FORMAT_COLUMN_MAP, type ImportFormat } from '@/utils/excelFormatMap';
 import { validateAndBoundEntries } from '@/utils/backup/parseBackupEntries';
@@ -16,10 +16,7 @@ import { validateAndBoundEntries } from '@/utils/backup/parseBackupEntries';
  * @param buffer CSV 文件原始字节
  * @param format 导入格式，'auto' 时自动检测
  */
-export function parseCSVBuffer(
-  buffer: ArrayBuffer,
-  format: ImportFormat = 'auto',
-): Omit<PasswordEntry, 'id' | 'order'>[] {
+export function parseCSVBuffer(buffer: ArrayBuffer, format: ImportFormat = 'auto'): ParsedImportData {
   // 优先使用 UTF-8 解码
   const utf8Text = new TextDecoder('utf-8', { fatal: false }).decode(buffer);
   let results = parseCSVFromText(utf8Text, format);
@@ -45,14 +42,20 @@ export function parseCSVBuffer(
     logger.warn('CSV 解析结果为空，请检查文件编码和格式');
   }
 
-  // B4：与 JSON / .aph 导入共用同一份边界口径（条数上界 + 逐字段长度上限）
-  return validateAndBoundEntries(results);
+  // 同时复用统一导入边界：CSV 不携带独立分组树，groupPath 由 resolveImportedGroups 建组。
+  // 分组路径统一成 string（无分组列即空串）：导入边界会丢掉空的可选字段，而分组是本仓
+  // 的补充维度，下游按字符串消费 groupPath，缺字段与空串必须同义。
+  const boundedEntries = validateAndBoundEntries(results);
+  return {
+    entries: boundedEntries.map(entry => ({ ...entry, groupPath: entry.groupPath ?? '' })),
+    groups: [],
+  };
 }
 
 /**
  * 从文本解析 CSV（已处理 BOM 和编码）
  */
-function parseCSVFromText(text: string, format: ImportFormat): Omit<PasswordEntry, 'id' | 'order'>[] {
+function parseCSVFromText(text: string, format: ImportFormat): ImportedPasswordEntry[] {
   // 去除 BOM，防止首个表头字段被污染（如 \uFEFF用户名(必填)）
   const cleanText = text.replace(/^\uFEFF/, '');
   const lines = cleanText.split(/\r?\n/).filter(line => line.trim());
@@ -102,13 +105,9 @@ function parseCSVFromText(text: string, format: ImportFormat): Omit<PasswordEntr
 /**
  * 使用指定列映射解析数据行
  */
-function parseRowsWithMapping(
-  lines: string[],
-  headers: string[],
-  mapping: CsvColumnMapping,
-): Omit<PasswordEntry, 'id' | 'order'>[] {
+function parseRowsWithMapping(lines: string[], headers: string[], mapping: CsvColumnMapping): ImportedPasswordEntry[] {
   const now = Date.now();
-  const results: Omit<PasswordEntry, 'id' | 'order'>[] = [];
+  const results: ImportedPasswordEntry[] = [];
 
   for (let i = 1; i < lines.length; i++) {
     const values = parseCSVLine(lines[i]);
@@ -129,6 +128,7 @@ function parseRowsWithMapping(
       tag: (findColumn(row, mapping.tag) || '').trim(),
       remark: (findColumn(row, mapping.remark) || '').trim(),
       totp: (findColumn(row, mapping.totp) || '').trim(),
+      groupPath: (findColumn(row, mapping.group) || '').trim(),
       createTime: now,
       updateTime: now,
     });

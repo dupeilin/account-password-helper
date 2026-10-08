@@ -54,6 +54,12 @@ export const STORAGE_KEYS = {
    * 站点或步骤内容，因此本键不构成隐私面。自动弹出终生仅一次。
    */
   ONBOARDING_TOUR: 'onboarding_tour_state',
+  /** Options 密码列表多列排序链（数组顺序即优先级；空数组表示默认排序） */
+  OPTIONS_SORT_CHAIN: 'options_sort_chain',
+  /** 密码分组树（扁平数组，邻接表表示；非敏感组织维度，不加密） */
+  PASSWORD_GROUPS: 'password_groups',
+  /** Options 密码表格「分组」列是否可见（用户自定义，默认 false 隐藏） */
+  OPTIONS_GROUP_COL_VISIBLE: 'options_group_col_visible',
 };
 
 /**

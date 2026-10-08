@@ -11,7 +11,7 @@ import type {
 import { logger } from '@/utils/logger';
 import { STORAGE_KEYS } from '@/utils/storageKeys';
 import { DEFAULT_THEME } from '@/utils/theme';
-import { sortPasswordEntries, DEFAULT_SORT } from '@/utils/passwordSort';
+import { sortPasswordEntries, DEFAULT_SORT, type SortCriterion } from '@/utils/passwordSort';
 import { isExactHostMatch, isDomainMatchMode, type DomainMatchMode } from '@/utils/domain';
 import { DEFAULT_PAGE_SIZE, isVaultPageSize } from '@/utils/vaultPageSize';
 
@@ -145,6 +145,67 @@ export async function getSortConfig(): Promise<{ prop: string; order: string } |
   } catch (error) {
     logger.error('获取排序配置失败:', error);
     return null;
+  }
+}
+
+// ==================== Options 多列排序链配置 ====================
+
+/**
+ * 校验并归一化排序链（防御不可信存储数据）
+ *
+ * 逐项要求 prop 为非空字符串、order 为明确方向；丢弃非法项。
+ * 全部非法时返回空数组（等价于默认排序）。
+ */
+function normalizeSortChain(raw: unknown): SortCriterion[] {
+  if (!Array.isArray(raw)) return [];
+  const result: SortCriterion[] = [];
+  for (const item of raw) {
+    if (!item || typeof item !== 'object') continue;
+    const { prop, order } = item as { prop?: unknown; order?: unknown };
+    if (typeof prop !== 'string' || prop === '') continue;
+    if (order !== 'ascending' && order !== 'descending') continue;
+    result.push({ prop, order });
+  }
+  return result;
+}
+
+/**
+ * 获取 Options 列表多列排序链
+ *
+ * 优先读取新键 `options_sort_chain`；若不存在则尝试从旧单列键 `password_sort_config`
+ * 迁移（长度为 1 的数组，order 为 null 时视为空链）。均无或异常时返回空数组（默认排序）。
+ * 排序链属展示偏好，任何异常都不应阻断列表加载。
+ */
+export async function getOptionsSortChain(): Promise<SortCriterion[]> {
+  try {
+    const result = await chrome.storage.local.get([STORAGE_KEYS.OPTIONS_SORT_CHAIN, STORAGE_KEYS.SORT_CONFIG]);
+    const stored = result[STORAGE_KEYS.OPTIONS_SORT_CHAIN];
+    if (stored !== undefined) return normalizeSortChain(stored);
+
+    // 旧格式迁移：单列 { prop, order } → 排序链（order 为 null 表示无排序 → 空链）
+    const legacy = result[STORAGE_KEYS.SORT_CONFIG] as { prop?: unknown; order?: unknown } | undefined;
+    if (legacy && typeof legacy.prop === 'string' && legacy.prop !== '') {
+      if (legacy.order === 'ascending' || legacy.order === 'descending') {
+        return [{ prop: legacy.prop, order: legacy.order }];
+      }
+      return [];
+    }
+    return [];
+  } catch (error) {
+    logger.error('获取多列排序链失败:', error);
+    return [];
+  }
+}
+
+/**
+ * 保存 Options 列表多列排序链（空数组表示清除排序、回退默认）
+ */
+export async function saveOptionsSortChain(chain: readonly SortCriterion[]): Promise<void> {
+  try {
+    await chrome.storage.local.set({ [STORAGE_KEYS.OPTIONS_SORT_CHAIN]: normalizeSortChain(chain) });
+  } catch (error) {
+    logger.error('保存多列排序链失败:', error);
+    throw error;
   }
 }
 
@@ -414,6 +475,36 @@ export async function setFavoriteLimit(limit: number): Promise<void> {
     });
   } catch (error) {
     logger.error('设置收藏上限失败:', error);
+    throw error;
+  }
+}
+
+// ==================== Options 分组列显隐配置 ====================
+
+/**
+ * 获取 Options 表格「分组」列是否可见
+ *
+ * 默认隐藏：左侧分组树已表达当前归属，聚合视图下才需要路径列区分来源。
+ * 属展示偏好，读取异常降级为默认值，不阻断列表加载。
+ */
+export async function getOptionsGroupColVisible(): Promise<boolean> {
+  try {
+    const result = await chrome.storage.local.get(STORAGE_KEYS.OPTIONS_GROUP_COL_VISIBLE);
+    return result[STORAGE_KEYS.OPTIONS_GROUP_COL_VISIBLE] === true;
+  } catch (error) {
+    logger.error('获取分组列显隐配置失败:', error);
+    return false;
+  }
+}
+
+/**
+ * 保存 Options 表格「分组」列显隐偏好
+ */
+export async function setOptionsGroupColVisible(visible: boolean): Promise<void> {
+  try {
+    await chrome.storage.local.set({ [STORAGE_KEYS.OPTIONS_GROUP_COL_VISIBLE]: visible });
+  } catch (error) {
+    logger.error('保存分组列显隐配置失败:', error);
     throw error;
   }
 }

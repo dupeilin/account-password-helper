@@ -48,70 +48,131 @@
         @open-tour="replayTour"
       />
 
-      <!-- 搜索和筛选（空数据时隐藏） -->
-      <SearchFilterBar
-        v-if="passwords.length > 0 || tableLoading"
-        v-model:search-keyword="searchKeyword"
-        v-model:favorite-only="favoriteOnly"
-        v-model:filter-tags="filterTags"
-        :selected-count="selectedIds.length"
-        :available-tags="availableTags"
-        @tag-filter-visible-change="handleTagFilterVisibleChange"
-        @batch-delete="batchDelete"
-        @batch-edit-tags="showBatchTagDialog = true"
-        @batch-export-selected="batchExportSelected"
-      />
+      <!-- 列表卡片：分组窗格与筛选/表格共用同一张卡片，构成一个整体表格块 -->
+      <div class="list-card">
+        <!-- 左侧分组树：空数据时也显示，分组管理不依赖条目存在 -->
+        <GroupTreePanel
+          :tree-data="groupTree"
+          :entry-counts="groupEntryCounts"
+          :selected-group-code="selectedGroupCode"
+          @select="selectedGroupCode = $event"
+          @create="createGroup"
+          @rename="renameGroup"
+          @request-delete="openGroupDeleteDialog"
+          @move="moveGroup"
+          @reorder="reorderGroups"
+          @drop-entries="moveEntriesToGroup"
+        />
 
-      <!-- 展示密码列表总数和搜索结果总数 -->
-      <div
-        v-if="passwords.length > 0"
-        class="password-list-info"
-      >
-        <span>
-          {{ t('options.totalPasswords') }}
-          <el-text type="success">
-            {{ passwords.length }}
-          </el-text>
-          {{ t('options.totalUnit') }}
-        </span>
-        <span v-if="filteredPasswords.length !== passwords.length">
-          {{ t('options.filtered') }}
-          <el-text type="success">{{ filteredPasswords.length }}</el-text>
-          {{ t('options.filteredUnit') }}
-        </span>
+        <div class="list-card__body">
+          <!-- 搜索和筛选（空数据时隐藏） -->
+          <SearchFilterBar
+            v-if="passwords.length > 0 || tableLoading"
+            v-model:search-keyword="searchKeyword"
+            v-model:favorite-only="favoriteOnly"
+            v-model:filter-tags="filterTags"
+            v-model:filter-urls="filterUrls"
+            :selected-count="selectedIds.length"
+            :available-tags="filterTagOptions"
+            :url-options="filterUrlOptions"
+            @tag-filter-visible-change="handleTagFilterVisibleChange"
+            @url-filter-visible-change="handleUrlFilterVisibleChange"
+            @batch-delete="batchDelete"
+            @batch-edit-tags="showBatchTagDialog = true"
+            @batch-move-group="showBatchGroupDialog = true"
+            @batch-export-selected="batchExportSelected"
+          />
+
+          <!-- 展示密码列表总数和搜索结果总数 -->
+          <div
+            v-if="passwords.length > 0"
+            class="password-list-info"
+          >
+            <span>
+              {{ t('options.totalPasswords') }}
+              <el-text type="success">
+                {{ passwords.length }}
+              </el-text>
+              {{ t('options.totalUnit') }}
+            </span>
+            <span v-if="filteredPasswords.length !== passwords.length">
+              {{ t('options.filtered') }}
+              <el-text type="success">{{ filteredPasswords.length }}</el-text>
+              {{ t('options.filteredUnit') }}
+            </span>
+            <!-- 多列排序链：chip 可拖拽改优先级、可单独移除，末尾一键清除回退默认排序 -->
+            <span
+              v-if="sortChain.length > 0"
+              class="sort-chain"
+            >
+              <span class="sort-chain__title">{{ t('options.sort.sortedBy') }}</span>
+              <el-tag
+                v-for="(criterion, index) in sortChain"
+                :key="criterion.prop"
+                class="sort-chain__chip"
+                :class="{ 'is-dragging': dragIndex === index, 'is-drop-target': isDropTarget(index) }"
+                size="small"
+                type="primary"
+                effect="light"
+                draggable="true"
+                closable
+                @dragstart="onSortDragStart(index)"
+                @dragover.prevent="onSortDragOver(index)"
+                @drop.prevent="onSortDrop"
+                @dragend="onSortDragEnd"
+                @close="removeSortCriterion(criterion.prop)"
+              >
+                <span class="sort-chain__seq">{{ index + 1 }}</span>
+                {{ sortLabel(criterion.prop) }}
+                <span class="sort-chain__dir">{{ criterion.order === 'ascending' ? '↑' : '↓' }}</span>
+              </el-tag>
+              <button
+                type="button"
+                class="sort-chain__clear"
+                @click="clearSortChain"
+              >
+                {{ t('options.sort.clear') }}
+              </button>
+            </span>
+          </div>
+
+          <!-- 空数据状态引导 -->
+          <EmptyGuide
+            v-if="passwords.length === 0 && !tableLoading"
+            @add="openAddDialogWithActiveTab"
+            @import="showImportDialog = true"
+            @restore="showBackupImportDialog = true"
+          />
+
+          <!-- 密码列表 -->
+          <PasswordTable
+            v-else
+            ref="passwordTableRef"
+            v-model:current-page="currentPage"
+            v-model:page-size="pageSize"
+            :data="pagedEntries"
+            :loading="tableLoading"
+            :search-keyword="debouncedSearchKeyword"
+            :row-class-name="handleRowClassName"
+            :sort-chain="sortChain"
+            :group-col-visible="groupColVisible"
+            :selected-ids="selectedIds"
+            :page-count="pageCount"
+            :total-count="totalCount"
+            :selected-count="selectedIds.length"
+            :off-page-selected-count="offPageSelectedCount"
+            @update:group-col-visible="setGroupColVisible"
+            @selection-change="handleSelectionChange"
+            @column-sort="handleColumnSort"
+            @toggle-password="togglePasswordVisibility"
+            @view-detail="onViewDetail"
+            @copy="copyPassword"
+            @edit="editPassword"
+            @toggle-favorite="toggleFavorite"
+            @delete-password="deletePassword"
+          />
+        </div>
       </div>
-
-      <!-- 空数据状态引导 -->
-      <EmptyGuide
-        v-if="passwords.length === 0 && !tableLoading"
-        @add="openAddDialogWithActiveTab"
-        @import="showImportDialog = true"
-        @restore="showBackupImportDialog = true"
-      />
-
-      <!-- 密码列表 -->
-      <PasswordTable
-        v-else
-        ref="passwordTableRef"
-        v-model:current-page="currentPage"
-        v-model:page-size="pageSize"
-        :data="pagedEntries"
-        :loading="tableLoading"
-        :search-keyword="debouncedSearchKeyword"
-        :row-class-name="handleRowClassName"
-        :page-count="pageCount"
-        :total-count="totalCount"
-        :selected-count="selectedIds.length"
-        :off-page-selected-count="offPageSelectedCount"
-        @selection-change="handleSelectionChange"
-        @sort-change="handleSortChange"
-        @toggle-password="togglePasswordVisibility"
-        @view-detail="onViewDetail"
-        @copy="copyPassword"
-        @edit="editPassword"
-        @toggle-favorite="toggleFavorite"
-        @delete-password="deletePassword"
-      />
     </div>
 
     <!-- 偏好设置弹窗（复用悬浮按钮设置面板） -->
@@ -154,6 +215,7 @@
       :tag-array="tagArray"
       :password-strength="formPasswordStrength"
       :password-rules="formPasswordRules"
+      :group-tree="groupTree"
       @save="handleSavePasswordWithValidation"
       @closed="handleResetPasswordForm"
       @update:form="applyPasswordFormPatch"
@@ -253,6 +315,25 @@
       @save="handleBatchTagSave"
     />
 
+    <!-- 批量移动到分组弹窗 -->
+    <BatchGroupDialog
+      v-model="showBatchGroupDialog"
+      :tree-data="groupTree"
+      :count="selectedIds.length"
+      :loading="batchGroupLoading"
+      @confirm="handleBatchGroupConfirm"
+    />
+
+    <!-- 删除分组确认弹窗（仅删分组 / 删分组和数据 二选一） -->
+    <GroupDeleteDialog
+      v-model="showGroupDeleteDialog"
+      :group-name="pendingDeleteGroup?.name ?? ''"
+      :entry-count="pendingDeleteGroupStats.entryCount"
+      :sub-group-count="pendingDeleteGroupStats.subGroupCount"
+      :loading="groupDeleteLoading"
+      @confirm="handleGroupDeleteConfirm"
+    />
+
     <!-- 主密码验证弹窗（导出/备份/有效期修改等操作前校验） -->
     <MasterPasswordVerifyDialog />
 
@@ -275,7 +356,7 @@
 
 <script setup lang="ts">
 import { ref, computed, nextTick, onMounted, onUnmounted, watch, defineAsyncComponent } from 'vue';
-import type { FloatingButtonConfig, PasswordEntry } from '@/utils/types';
+import type { FloatingButtonConfig, PasswordEntry, PasswordGroup } from '@/utils/types';
 import { MessageType } from '@/utils/types';
 import { initSessionManager } from '@/utils/sessionManager';
 import { StorageUtils } from '@/utils/storage';
@@ -306,6 +387,8 @@ const ChangeMasterPasswordDialog = defineAsyncComponent(
   () => import('@/components/options/ChangeMasterPasswordDialog.vue'),
 );
 const BatchTagDialog = defineAsyncComponent(() => import('@/components/options/BatchTagDialog.vue'));
+const BatchGroupDialog = defineAsyncComponent(() => import('@/components/options/BatchGroupDialog.vue'));
+const GroupDeleteDialog = defineAsyncComponent(() => import('@/components/options/GroupDeleteDialog.vue'));
 const MasterPasswordVerifyDialog = defineAsyncComponent(
   () => import('@/components/options/MasterPasswordVerifyDialog.vue'),
 );
@@ -327,6 +410,7 @@ import PasswordTable from '@/components/options/PasswordTable.vue';
 import HeaderBar from '@/components/options/HeaderBar.vue';
 import EmptyGuide from '@/components/options/EmptyGuide.vue';
 import SearchFilterBar from '@/components/options/SearchFilterBar.vue';
+import GroupTreePanel from '@/components/options/GroupTreePanel.vue';
 import { usePasswordStrength } from '@/composables/usePasswordStrength';
 import { useAuthFlow } from '@/composables/useAuthFlow';
 import { useSessionTimer } from '@/composables/useSessionTimer';
@@ -344,6 +428,7 @@ import { exportEncryptedBackup } from '@/utils/backupExport';
 import { promptAndVerifyMasterPassword } from '@/utils/masterPasswordVerify';
 import { buildHealthReportAsync, type HealthReport } from '@/utils/passwordHealth';
 import { normalizeToHostAndPort } from '@/utils/domain';
+import { getDescendantCodes } from '@/utils/groupTree';
 import { clearPlaintextKeyedCaches } from '@/utils/plaintextCacheCleanup';
 import { isDev } from '@/utils/env';
 
@@ -673,6 +758,12 @@ const {
   tableLoading,
   favoriteOnly,
   filterTags,
+  filterUrls,
+  groups,
+  groupTree,
+  groupEntryCounts,
+  selectedGroupCode,
+  groupColVisible,
   filteredPasswords,
   pagedEntries,
   currentPage,
@@ -681,17 +772,24 @@ const {
   totalCount,
   offPageSelectedCount,
   currentSort,
+  sortChain,
   availableTags,
+  filterTagOptions,
+  filterUrlOptions,
   tagArray,
   loadPasswords,
   patchMetadataOnlyFromStorage,
-  handleSortChange,
   restoreSortConfig: initSortConfig,
   restorePageSizeConfig,
   togglePasswordVisibility,
   handleRowClassName,
   handleSelectionChange,
   handleTagFilterVisibleChange,
+  handleUrlFilterVisibleChange,
+  handleColumnSort,
+  removeSortCriterion,
+  clearSortChain,
+  moveSortCriterion,
   openPasswordDialog,
   editPassword,
   resetPasswordForm,
@@ -710,6 +808,13 @@ const {
   backupToEmail,
   toggleFavorite,
   removeDuplicates,
+  createGroup,
+  renameGroup,
+  deleteGroup,
+  moveGroup,
+  reorderGroups,
+  moveEntriesToGroup,
+  setGroupColVisible,
   isLocalOperation,
   consumeLocalOperation,
 } = usePasswordManagement({
@@ -729,6 +834,115 @@ watch(showTrashDialog, (visible, wasVisible) => {
 
 /** 批量编辑标签弹窗可见性 */
 const showBatchTagDialog = ref(false);
+
+/** 可排序列字段 → i18n 标签 key（与 PasswordTable 列标签保持一致） */
+const SORT_LABEL_KEYS: Record<string, string> = {
+  username: 'common.username',
+  url: 'common.url',
+  tag: 'common.tag',
+  remark: 'common.remark',
+  createTime: 'sidepanel.createTime',
+  updateTime: 'options.table.updateTime',
+  groupPath: 'options.group.column',
+};
+
+/**
+ * 取列字段的已翻译标签（用于信息栏排序链 chip）
+ * @param prop 列字段名
+ */
+const sortLabel = (prop: string): string => t(SORT_LABEL_KEYS[prop] ?? prop);
+
+/** 当前被拖拽的排序 chip 下标（null 表示未在拖拽） */
+const dragIndex = ref<number | null>(null);
+/** 拖拽悬停的目标下标（用于高亮落点） */
+const dragOverIndex = ref<number | null>(null);
+
+const onSortDragStart = (index: number) => {
+  dragIndex.value = index;
+};
+const onSortDragOver = (index: number) => {
+  dragOverIndex.value = index;
+};
+const onSortDrop = () => {
+  if (dragIndex.value !== null && dragOverIndex.value !== null) {
+    moveSortCriterion(dragIndex.value, dragOverIndex.value);
+  }
+  onSortDragEnd();
+};
+const onSortDragEnd = () => {
+  dragIndex.value = null;
+  dragOverIndex.value = null;
+};
+/** 目标落点高亮：悬停且非自身 */
+const isDropTarget = (index: number): boolean =>
+  dragIndex.value !== null && dragOverIndex.value === index && dragIndex.value !== index;
+
+/** 批量移动到分组弹窗可见性 */
+const showBatchGroupDialog = ref(false);
+/** 批量移动提交中状态（阻止重复提交） */
+const batchGroupLoading = ref(false);
+
+/**
+ * 批量移动确认：归组后关闭弹窗
+ * @param targetCode 目标分组 code（UNGROUPED_CODE = 移出分组）
+ */
+const handleBatchGroupConfirm = async (targetCode: string) => {
+  if (batchGroupLoading.value) return;
+  batchGroupLoading.value = true;
+  try {
+    if (await moveEntriesToGroup(selectedIds.value, targetCode)) {
+      showBatchGroupDialog.value = false;
+    }
+  } finally {
+    batchGroupLoading.value = false;
+  }
+};
+
+/** 删除分组确认弹窗可见性 */
+const showGroupDeleteDialog = ref(false);
+/** 删除进行中状态 */
+const groupDeleteLoading = ref(false);
+/** 待删除的分组 */
+const pendingDeleteGroup = ref<PasswordGroup | null>(null);
+
+/** 待删除分组的统计（条目数含子孙聚合；子分组数含子孙） */
+const pendingDeleteGroupStats = computed(() => {
+  const target = pendingDeleteGroup.value;
+  if (!target) return { entryCount: 0, subGroupCount: 0 };
+  const doomed = getDescendantCodes(target.code, groups.value);
+  return {
+    entryCount: groupEntryCounts.value.get(target.code) ?? 0,
+    subGroupCount: Math.max(0, doomed.size - 1),
+  };
+});
+
+/**
+ * 打开删除分组确认弹窗
+ * @param code 目标分组 code
+ */
+const openGroupDeleteDialog = (code: string) => {
+  pendingDeleteGroup.value = groups.value.find(group => group.code === code) ?? null;
+  if (!pendingDeleteGroup.value) return;
+  showGroupDeleteDialog.value = true;
+};
+
+/**
+ * 删除分组确认：按用户选择的处置方式执行
+ * @param mode 'toUngrouped' 条目移入未分组 / 'toTrash' 条目进回收站
+ */
+const handleGroupDeleteConfirm = async (mode: 'toUngrouped' | 'toTrash') => {
+  const target = pendingDeleteGroup.value;
+  if (!target) return;
+  groupDeleteLoading.value = true;
+  try {
+    if (await deleteGroup(target.code, mode)) {
+      showGroupDeleteDialog.value = false;
+      pendingDeleteGroup.value = null;
+    }
+  } finally {
+    groupDeleteLoading.value = false;
+  }
+};
 
 /**
  * 命中集合一变就清空选中
@@ -1362,5 +1576,67 @@ body {
 
 .dialog-body-scroll::-webkit-scrollbar-thumb:hover {
   background-color: #94a3b8;
+}
+
+/* 排序链：信息栏内联展示，chip 紧凑排列 */
+.sort-chain {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  margin-left: 8px;
+}
+
+.sort-chain__title {
+  color: var(--el-text-color-secondary);
+}
+
+/* chip 可拖拽改优先级：抓取光标 + 拖拽/落点态 */
+.sort-chain__chip {
+  cursor: grab;
+}
+
+.sort-chain__chip:active {
+  cursor: grabbing;
+}
+
+.sort-chain__chip.is-dragging {
+  opacity: 0.5;
+}
+
+.sort-chain__chip.is-drop-target {
+  outline: 1px dashed var(--el-color-primary);
+  outline-offset: 1px;
+}
+
+.sort-chain__seq {
+  margin-right: 2px;
+  font-weight: 600;
+  color: var(--el-color-primary);
+}
+
+.sort-chain__dir {
+  margin-left: 2px;
+}
+
+/* 清除排序：与 chip 同高的文字按钮，避免 el-button link 过大、基线不齐 */
+.sort-chain__clear {
+  padding: 0 2px;
+  font-size: 12px;
+  color: var(--el-color-primary);
+  cursor: pointer;
+  background: none;
+  border: none;
+  transition: color 0.2s ease;
+}
+
+.sort-chain__clear:hover {
+  color: var(--el-color-primary-light-3);
+  text-decoration: underline;
+}
+
+.sort-chain__clear:focus-visible {
+  outline: 2px solid rgb(var(--aph-primary-rgb) / 60%);
+  outline-offset: 1px;
+  border-radius: 2px;
 }
 </style>

@@ -1,4 +1,6 @@
-import type { PasswordEntry } from '@/utils/types';
+import type { PasswordGroup } from '@/utils/types';
+import { ROOT_GROUP_CODE } from '@/utils/types';
+import type { ParsedImportData } from '@/utils/groupTree';
 import { logger } from '@/utils/logger';
 import { checkEntryCount, validateAndBoundEntries, PasswordBackupError } from '@/utils/backup/parseBackupEntries';
 import { MAX_BACKUP_VERSION } from '@/utils/backup/constants';
@@ -24,9 +26,9 @@ function firstPresent(...candidates: unknown[]): unknown {
  * 支持数组格式或 `{ entries: [...] }` 包裹格式，字段映射兼容中英文列名。
  *
  * @param text JSON 文本内容
- * @returns 解析后的密码数据数组
+ * @returns 解析后的条目与文件内分组树
  */
-export function parsePasswordJSON(text: string): Omit<PasswordEntry, 'id' | 'order'>[] {
+export function parsePasswordJSON(text: string): ParsedImportData {
   try {
     const raw: unknown = JSON.parse(text);
 
@@ -47,7 +49,7 @@ export function parsePasswordJSON(text: string): Omit<PasswordEntry, 'id' | 'ord
 
     if (entries.length === 0) {
       logger.warn('JSON 文件中未发现有效数据条目');
-      return [];
+      return { entries: [], groups: parseGroups(raw) };
     }
 
     // 条数上界先于逐条映射，避免超大文件触发无界同步处理与内存分配
@@ -77,6 +79,8 @@ export function parsePasswordJSON(text: string): Omit<PasswordEntry, 'id' | 'ord
         tag: firstPresent(r.tag, r['标签'], r['分类']),
         remark: firstPresent(r.remark, r['备注'], r['说明']),
         totp: firstPresent(r.totp, r['两步验证'], r.otpauth),
+        groupPath: firstPresent(r.groupPath, r['分组']),
+        groupId: firstPresent(r.groupId),
         createTime: cTime ?? uTime ?? now,
         updateTime: uTime ?? cTime ?? now,
       };
@@ -85,11 +89,41 @@ export function parsePasswordJSON(text: string): Omit<PasswordEntry, 'id' | 'ord
     });
 
     // 复用统一边界：逐字段类型/长度校验、时间戳回退、空用户名条目过滤
-    return validateAndBoundEntries(mapped);
+    // groupPath 统一成 string（无分组字段即空串）：导入边界会丢掉空的可选字段，而分组
+    // 是本仓的补充维度，下游按字符串消费 groupPath，缺字段与空串必须同义。
+    const boundedEntries = validateAndBoundEntries(mapped);
+    return {
+      entries: boundedEntries.map(entry => ({ ...entry, groupPath: entry.groupPath ?? '' })),
+      groups: parseGroups(raw),
+    };
   } catch (error) {
     logger.error('解析 JSON 文件失败:', error);
     const err = new Error('JSON 文件格式不正确');
     (err as any).cause = error;
     throw err;
   }
+}
+
+/**
+ * 解析 JSON 文件内自带的分组树。
+ *
+ * 文件属于不可信输入：逐项校验字段类型，非法项丢弃，整体非数组时降级为空树，
+ * 不阻断条目导入。
+ */
+function parseGroups(raw: any): PasswordGroup[] {
+  const list = Array.isArray(raw?.groups) ? raw.groups : [];
+  const result: PasswordGroup[] = [];
+  for (const item of list) {
+    if (!item || typeof item !== 'object') continue;
+    const { code, name, parentCode, order } = item as Record<string, unknown>;
+    if (typeof code !== 'string' || code === '') continue;
+    if (typeof name !== 'string' || name.trim() === '') continue;
+    result.push({
+      code,
+      name: name.trim(),
+      parentCode: typeof parentCode === 'string' && parentCode !== '' ? parentCode : ROOT_GROUP_CODE,
+      order: typeof order === 'number' && Number.isFinite(order) ? order : 0,
+    });
+  }
+  return result;
 }

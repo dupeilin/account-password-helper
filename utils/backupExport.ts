@@ -1,4 +1,4 @@
-import type { PasswordEntry } from '@/utils/types';
+import type { PasswordEntry, PasswordGroup } from '@/utils/types';
 import { logger } from '@/utils/logger';
 import { t } from '@/utils/i18n';
 import { formatTimestampCompact } from '@/utils/dateFormat';
@@ -7,8 +7,13 @@ import { MAX_PASSWORD_IMPORT_INPUT_BYTES } from '@/utils/backup/constants';
 import { parseBackupContainer, PasswordBackupError } from '@/utils/backup/parseBackupEntries';
 import { markVerifiedBackupAt } from '@/utils/storage/configManager';
 
-/** 备份文件版本标识 */
-const BACKUP_VERSION = 1;
+/**
+ * 备份文件版本标识
+ *
+ * - v1：仅条目，导入时全部归入「未分组」
+ * - v2：条目携带 groupId，顶层携带 groups 分组树
+ */
+const BACKUP_VERSION = 2;
 /** AES-GCM IV 长度 */
 const IV_LENGTH = 12;
 /** PBKDF2 迭代次数（与主加密体系一致的 600K） */
@@ -22,6 +27,21 @@ interface BackupData {
   exportedAt: number;
   count: number;
   entries: Omit<PasswordEntry, 'id' | 'order'>[];
+  /** v2 新增；v1 文件缺省时按空分组树处理 */
+  groups?: PasswordGroup[];
+}
+
+/** 校验备份中的分组项，损坏项不进入导入合并流程。 */
+function isPasswordGroup(value: unknown): value is PasswordGroup {
+  if (!value || typeof value !== 'object') return false;
+  const group = value as Partial<PasswordGroup>;
+  return (
+    typeof group.code === 'string' &&
+    typeof group.name === 'string' &&
+    typeof group.parentCode === 'string' &&
+    typeof group.order === 'number' &&
+    Number.isFinite(group.order)
+  );
 }
 
 /**
@@ -68,7 +88,11 @@ async function deriveKey(password: string, salt: Uint8Array): Promise<CryptoKey>
  * version/count/entries 长度），确认这份文件确实能被本扩展解回，校验通过才落盘、
  * 并在成功后记录「最近成功备份」时间戳。字节格式（salt‖iv‖ciphertext）保持不变。
  */
-export async function exportEncryptedBackup(passwords: PasswordEntry[], masterPassword: string): Promise<void> {
+export async function exportEncryptedBackup(
+  passwords: PasswordEntry[],
+  masterPassword: string,
+  groups: readonly PasswordGroup[] = [],
+): Promise<void> {
   try {
     const backupData: BackupData = {
       version: BACKUP_VERSION,
@@ -84,7 +108,9 @@ export async function exportEncryptedBackup(passwords: PasswordEntry[], masterPa
         createTime: p.createTime,
         updateTime: p.updateTime,
         favorite: p.favorite,
+        groupId: p.groupId,
       })),
+      groups: groups.map(group => ({ ...group })),
     };
 
     const encoder = new TextEncoder();
@@ -170,7 +196,7 @@ export async function exportEncryptedBackup(passwords: PasswordEntry[], masterPa
 export async function importEncryptedBackup(
   file: File,
   masterPassword: string,
-): Promise<Omit<PasswordEntry, 'id' | 'order'>[]> {
+): Promise<{ entries: Omit<PasswordEntry, 'id' | 'order'>[]; groups: PasswordGroup[] }> {
   if (file.size > MAX_PASSWORD_IMPORT_INPUT_BYTES) {
     throw new BackupImportUserError(t('backup.fileTooLarge', { max: formatFileSize(MAX_PASSWORD_IMPORT_INPUT_BYTES) }));
   }
@@ -202,7 +228,11 @@ export async function importEncryptedBackup(
     // 交叉一致、字段白名单、逐字段类型/长度上限与条数上界，替代此前仅判 version 真值
     // + Array.isArray 的零逐条校验。解析成功即返回可信条目。
     try {
-      return parseBackupContainer(backupData, true);
+      const entries = parseBackupContainer(backupData, true);
+      const groups = Array.isArray((backupData as { groups?: unknown }).groups)
+        ? (backupData as { groups: unknown[] }).groups.filter(isPasswordGroup)
+        : [];
+      return { entries, groups };
     } catch (err) {
       if (err instanceof PasswordBackupError) {
         throw new BackupImportUserError(t('backup.invalidStructure'), err);

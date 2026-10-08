@@ -144,7 +144,8 @@ describe('.aph 容器 round-trip', () => {
 
     const imported = await importEncryptedBackup(fakeFile(bytes), MASTER_PASSWORD);
 
-    expect(imported).toEqual(expectedImported(SOURCE_ENTRIES));
+    expect(imported.entries).toEqual(expectedImported(SOURCE_ENTRIES));
+    expect(imported.groups).toEqual([]);
   });
 
   it('两次导出的 salt 与 IV 各不相同（相同明文不得产出相同容器）', async () => {

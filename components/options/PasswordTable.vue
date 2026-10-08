@@ -1,5 +1,8 @@
 <template>
-  <div class="password-list">
+  <div
+    ref="tableHostRef"
+    class="password-list"
+  >
     <el-table
       ref="localTableRef"
       v-loading="loading"
@@ -10,10 +13,8 @@
       stripe
       row-key="id"
       :row-class-name="rowClassName"
-      :default-sort="{ prop: 'updateTime', order: 'descending' }"
       :tooltip-options="TABLE_OVERFLOW_TOOLTIP_OPTIONS"
       @selection-change="(selection: PasswordEntry[]) => $emit('selectionChange', selection)"
-      @sort-change="(state: any) => $emit('sortChange', state)"
     >
       <el-table-column
         type="selection"
@@ -23,12 +24,20 @@
       />
       <el-table-column
         prop="username"
-        :label="t('common.username')"
         min-width="150"
-        sortable="custom"
         show-overflow-tooltip
       >
+        <template #header>
+          <SortHeaderCell
+            :label="t('common.username')"
+            prop="username"
+            :chain="sortChain"
+            @sort="prop => $emit('columnSort', prop)"
+          />
+        </template>
         <template #default="{ row }">
+          <!-- 关键词为空时 SearchHighlight 与纯文本渲染等价，直接输出文本，
+               避免大列表下每行创建无收益的组件实例（行为不变） -->
           <SearchHighlight
             v-if="searchKeyword"
             :text="row.username"
@@ -76,11 +85,17 @@
       </el-table-column>
       <el-table-column
         prop="url"
-        :label="t('common.url')"
         min-width="200"
-        sortable="custom"
         show-overflow-tooltip
       >
+        <template #header>
+          <SortHeaderCell
+            :label="t('common.url')"
+            prop="url"
+            :chain="sortChain"
+            @sort="prop => $emit('columnSort', prop)"
+          />
+        </template>
         <template #default="{ row }">
           <template v-if="row.url">
             <a
@@ -112,11 +127,17 @@
       </el-table-column>
       <el-table-column
         prop="tag"
-        :label="t('common.tag')"
         min-width="100"
         class-name="tag-col"
-        sortable="custom"
       >
+        <template #header>
+          <SortHeaderCell
+            :label="t('common.tag')"
+            prop="tag"
+            :chain="sortChain"
+            @sort="prop => $emit('columnSort', prop)"
+          />
+        </template>
         <template #default="{ row }">
           <template v-if="tagRecordsOf(row).length">
             <el-tooltip
@@ -151,13 +172,47 @@
           >
         </template>
       </el-table-column>
+      <!--
+        分组列：默认隐藏，由操作列表头的齿轮开关控制。
+        显示全路径，聚合视图下区分条目来自哪个子分组。
+      -->
       <el-table-column
-        prop="remark"
-        :label="t('common.remark')"
-        min-width="150"
-        sortable="custom"
+        v-if="groupColVisible"
+        prop="groupPath"
+        min-width="140"
         show-overflow-tooltip
       >
+        <template #header>
+          <SortHeaderCell
+            :label="t('options.group.column')"
+            prop="groupPath"
+            :chain="sortChain"
+            @sort="prop => $emit('columnSort', prop)"
+          />
+        </template>
+        <template #default="{ row }">
+          <span v-if="row.groupPath">{{ row.groupPath }}</span>
+          <span
+            v-else
+            class="no-tag"
+          >
+            {{ t('options.group.ungrouped') }}
+          </span>
+        </template>
+      </el-table-column>
+      <el-table-column
+        prop="remark"
+        min-width="150"
+        show-overflow-tooltip
+      >
+        <template #header>
+          <SortHeaderCell
+            :label="t('common.remark')"
+            prop="remark"
+            :chain="sortChain"
+            @sort="prop => $emit('columnSort', prop)"
+          />
+        </template>
         <template #default="{ row }">
           <template v-if="row.remark">
             <SearchHighlight
@@ -176,31 +231,66 @@
       </el-table-column>
       <el-table-column
         prop="createTime"
-        :label="t('sidepanel.createTime')"
         min-width="100"
-        sortable="custom"
       >
+        <template #header>
+          <SortHeaderCell
+            :label="t('sidepanel.createTime')"
+            prop="createTime"
+            :chain="sortChain"
+            @sort="prop => $emit('columnSort', prop)"
+          />
+        </template>
         <template #default="{ row }">
           {{ formatDate(row.createTime) }}
         </template>
       </el-table-column>
       <el-table-column
         prop="updateTime"
-        :label="t('options.table.updateTime')"
         min-width="100"
-        sortable="custom"
-        :sort-orders="['descending', 'ascending', null]"
       >
+        <template #header>
+          <SortHeaderCell
+            :label="t('options.table.updateTime')"
+            prop="updateTime"
+            :chain="sortChain"
+            @sort="prop => $emit('columnSort', prop)"
+          />
+        </template>
         <template #default="{ row }">
           {{ formatDate(row.updateTime) }}
         </template>
       </el-table-column>
       <el-table-column
-        :label="t('common.actions')"
         header-align="center"
         width="210"
         fixed="right"
       >
+        <template #header>
+          <span class="actions-header">
+            {{ t('common.actions') }}
+            <el-popover
+              placement="bottom-end"
+              :width="180"
+              trigger="click"
+            >
+              <template #reference>
+                <el-button
+                  :icon="Setting"
+                  link
+                  size="small"
+                  :aria-label="groupColumnSettingsLabel"
+                  :title="groupColumnSettingsLabel"
+                />
+              </template>
+              <el-checkbox
+                :model-value="groupColVisible"
+                :label="t('options.group.showColumn')"
+                @update:model-value="$emit('update:groupColVisible', $event === true)"
+              />
+            </el-popover>
+          </span>
+        </template>
         <template #default="{ row }">
           <div
             class="operation-buttons"
@@ -312,10 +402,11 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUpdate, onUpdated, ref } from 'vue';
-import { CopyDocument, Edit, Delete, View, Hide, Star, StarFilled, Link } from '@element-plus/icons-vue';
-import type { PasswordEntry } from '@/utils/types';
-import type { SortState } from '@/utils/passwordSort';
+import { computed, nextTick, onBeforeUpdate, onMounted, onUnmounted, onUpdated, ref, watch } from 'vue';
+import { CopyDocument, Edit, Delete, View, Hide, Star, StarFilled, Link, Setting } from '@element-plus/icons-vue';
+import type { PasswordEntry, PasswordEntryWithGroupPath } from '@/utils/types';
+import { ENTRY_DRAG_MIME } from '@/utils/groupTree';
+import type { SortCriterion, SortState } from '@/utils/passwordSort';
 import { formatDate } from '@/utils/dateFormat';
 import { buildTagPresentationRecords, type TagPresentationRecord } from '@/utils/tagUtils';
 import { TABLE_OVERFLOW_TOOLTIP_OPTIONS } from '@/utils/tableOverflowTooltip';
@@ -324,6 +415,7 @@ import { useSharedHoverTooltip } from '@/composables/useSharedHoverTooltip';
 import TotpCode from '@/components/TotpCode.vue';
 import SiteFavicon from '@/components/SiteFavicon.vue';
 import SearchHighlight from '@/components/SearchHighlight.vue';
+import SortHeaderCell from '@/components/options/SortHeaderCell.vue';
 import VaultPagination from '@/components/options/VaultPagination.vue';
 import { useI18n } from '@/utils/i18n';
 
@@ -333,15 +425,21 @@ import { useI18n } from '@/utils/i18n';
  * 展示密码数据的完整表格，包含搜索排序、标签渲染、
  * 密码显隐切换和操作按钮（查看详情/复制/编辑/收藏/删除）。
  */
-defineProps<{
-  /** 表格数据（当前页切片） */
-  data: PasswordEntry[];
+const props = defineProps<{
+  /** 表格数据（当前页切片，含预计算的分组全路径） */
+  data: PasswordEntryWithGroupPath[];
   /** 加载状态 */
   loading: boolean;
   /** 行类名函数 */
   rowClassName?: (data: { row: PasswordEntry; rowIndex: number }) => string;
   /** 当前搜索关键词（用于命中高亮，空串时不高亮） */
   searchKeyword?: string;
+  /** 当前多列排序链（驱动表头方向/优先级指示） */
+  sortChain: readonly SortCriterion[];
+  /** 「分组」列是否可见（默认隐藏，由表头齿轮开关控制） */
+  groupColVisible?: boolean;
+  /** 当前选中条目 ID（拖拽时决定搬运单行还是整批） */
+  selectedIds?: string[];
   /** 当前页码（从 1 开始），供分页条读数 */
   currentPage: number;
   /** 总页数 */
@@ -358,13 +456,15 @@ defineProps<{
 
 defineEmits<{
   selectionChange: [selection: PasswordEntry[]];
-  sortChange: [state: { prop: string; order: string }];
+  columnSort: [prop: string];
   togglePassword: [row: PasswordEntry];
   viewDetail: [row: PasswordEntry];
   copy: [row: PasswordEntry];
   edit: [row: PasswordEntry];
   toggleFavorite: [id: string];
   deletePassword: [id: string];
+  /** 切换「分组」列显隐 */
+  'update:groupColVisible': [value: boolean];
   'update:currentPage': [page: number];
   'update:pageSize': [size: number];
 }>();
@@ -394,6 +494,14 @@ const rowLabels = computed(() => ({
   showPassword: t('common.showPassword'),
   hidePassword: t('common.hidePassword'),
 }));
+
+/**
+ * 操作列表头的「列设置」按钮文案
+ *
+ * 表头插槽同样在每次整表渲染时执行，与 `rowLabels` 同理提到 setup 里算一次；
+ * 直接写在 `:aria-label` / `:title` 上会被渲染守卫当成逐行文案绑定。
+ */
+const groupColumnSettingsLabel = computed(() => t('options.group.columnSettings'));
 
 /** Tag 标签溢出检测 */
 const { checkTagOverflow, isTagOverflowed } = useTagOverflow();
@@ -565,6 +673,66 @@ onUpdated(() => {
   }
 });
 
+// ==================== 行拖拽归组 ====================
+
+/** 表格容器引用（dragstart 事件委托挂载点） */
+const tableHostRef = ref<HTMLElement | null>(null);
+
+/**
+ * 行拖拽起始：把条目 ID 写入 dataTransfer
+ *
+ * 只有已选中的行允许拖拽，落到分组树后搬运当前整批选中条目。
+ * 用自定义 MIME（ENTRY_DRAG_MIME）让左侧分组树能区分「拖条目」与「拖分组节点」；
+ * text/plain 兜底：部分浏览器要求至少设置一种标准类型才允许拖拽。
+ */
+const handleRowDragStart = (event: DragEvent, row: PasswordEntryWithGroupPath) => {
+  const selected = props.selectedIds ?? [];
+  if (!selected.includes(row.id)) {
+    event.preventDefault();
+    return;
+  }
+  event.dataTransfer?.setData(ENTRY_DRAG_MIME, selected.join(','));
+  event.dataTransfer?.setData('text/plain', selected.join(','));
+  if (event.dataTransfer) event.dataTransfer.effectAllowed = 'move';
+};
+
+/**
+ * 事件委托：容器监听冒泡的 dragstart，从 tr 的 class 反查行数据
+ *
+ * 委托方式只挂一个监听器，不随行数增长，也无需在行销毁时逐个清理。
+ */
+const handleContainerDragStart = (event: DragEvent) => {
+  const target = event.target as HTMLElement | null;
+  const row = target?.closest?.('tr.el-table__row');
+  if (!row) return;
+  // rowClassName 把条目 id 写进了 tr 的 class 列表；排除 Element Plus 自身的类名
+  const id = [...row.classList].find(cls => !cls.startsWith('el-') && cls !== 'new-item' && cls !== 'del-item');
+  if (!id) return;
+  const entry = props.data.find(item => item.id === id);
+  if (entry) handleRowDragStart(event, entry);
+};
+
+/** 只给已选中的表格行设置 draggable（数据或选中集更新后重新标记） */
+const markRowsDraggable = () => {
+  const selectedIds = props.selectedIds ?? [];
+  tableHostRef.value?.querySelectorAll('tr.el-table__row').forEach(row => {
+    const id = [...row.classList].find(cls => !cls.startsWith('el-') && cls !== 'new-item' && cls !== 'del-item');
+    row.setAttribute('draggable', String(Boolean(id && selectedIds.includes(id))));
+  });
+};
+
+onMounted(() => {
+  tableHostRef.value?.addEventListener('dragstart', handleContainerDragStart);
+  void nextTick(markRowsDraggable);
+});
+
+onUnmounted(() => {
+  tableHostRef.value?.removeEventListener('dragstart', handleContainerDragStart);
+});
+
+// 翻页/过滤/排序后行 DOM 重建，重新标记 draggable
+watch([() => props.data, () => props.selectedIds], () => void nextTick(markRowsDraggable));
+
 /**
  * 将 URL 文本归一化为可跳转的完整链接
  * @param url 原始 URL 文本
@@ -593,16 +761,6 @@ defineExpose({
 </script>
 
 <style scoped>
-/* 密码列表容器 */
-.password-list {
-  margin: 0 32px 32px;
-  overflow: hidden;
-  background: white;
-  border: 1px solid var(--aph-surface-line);
-  border-radius: 8px;
-  box-shadow: 0 1px 4px rgb(var(--aph-primary-rgb) / 8%);
-}
-
 .password-cell {
   display: flex;
   gap: 8px;
@@ -727,6 +885,22 @@ defineExpose({
   color: #c0c4cc;
 }
 
+/* 操作列表头：标题 + 列显隐齿轮 */
+.actions-header {
+  display: inline-flex;
+  gap: 4px;
+  align-items: center;
+}
+
+/* 可拖拽行：抓取光标提示 */
+:deep(.el-table__body-wrapper tr.el-table__row) {
+  cursor: grab;
+}
+
+:deep(.el-table__body-wrapper tr.el-table__row:active) {
+  cursor: grabbing;
+}
+
 /* 操作按钮样式 */
 .operation-buttons {
   display: flex;
@@ -783,12 +957,5 @@ defineExpose({
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-/* 响应式 */
-@media (width <= 768px) {
-  .password-list {
-    margin: 0 16px 16px;
-  }
 }
 </style>

@@ -56,6 +56,26 @@
         :value="tag"
       />
     </el-select>
+    <el-select
+      v-if="urlOptions.length > 0"
+      :model-value="filterUrls"
+      multiple
+      collapse-tags
+      collapse-tags-tooltip
+      clearable
+      filterable
+      class="url-filter"
+      :placeholder="t('options.filter.urlPlaceholder')"
+      @update:model-value="$emit('update:filterUrls', $event)"
+      @visible-change="$emit('urlFilterVisibleChange', $event)"
+    >
+      <el-option
+        v-for="url in urlOptions"
+        :key="url"
+        :label="url"
+        :value="url"
+      />
+    </el-select>
     <el-tooltip
       :content="favoriteOnly ? t('sidepanel.showAll') : t('sidepanel.favoritesOnly')"
       placement="top"
@@ -95,14 +115,21 @@ defineProps<{
   availableTags: string[];
   /** 标签筛选选中集（命中任一即保留） */
   filterTags: string[];
+  /** 网址筛选候选集（hostname 去重，为空时隐藏网址筛选下拉） */
+  urlOptions: string[];
+  /** 网址筛选选中集（命中任一即保留） */
+  filterUrls: string[];
 }>();
 
 defineEmits<{
   'update:searchKeyword': [value: string];
   'update:favoriteOnly': [value: boolean];
   'update:filterTags': [value: string[]];
+  'update:filterUrls': [value: string[]];
   /** 标签筛选下拉展开/收起（供父级延迟清空选中，避免交互中途布局跳动） */
   tagFilterVisibleChange: [visible: boolean];
+  /** 网址筛选下拉展开/收起（语义与标签筛选一致） */
+  urlFilterVisibleChange: [visible: boolean];
   batchDelete: [];
   batchEditTags: [];
   batchExportSelected: [];
@@ -138,6 +165,12 @@ const { t } = useI18n();
 
 /* 标签筛选：固定宽度，避免多标签撑开挤压搜索框 */
 .filters .tag-filter {
+  flex-shrink: 0;
+  width: 200px;
+}
+
+/* 网址筛选：与标签筛选同宽，hostname 较长时由 filterable 搜索兜底 */
+.filters .url-filter {
   flex-shrink: 0;
   width: 200px;
 }
