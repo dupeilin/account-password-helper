@@ -137,6 +137,12 @@
                 {{ t('options.header.emailBackup') }}
               </el-dropdown-item>
               <el-dropdown-item
+                command="cloudSync"
+                :icon="Cloudy"
+              >
+                {{ t('options.header.cloudSync') }}
+              </el-dropdown-item>
+              <el-dropdown-item
                 divided
                 command="removeDuplicates"
                 :icon="Delete"
@@ -269,6 +275,7 @@ import {
   Delete,
   Setting,
   Message,
+  Cloudy,
   FolderChecked,
   ArrowDown,
   FolderOpened,

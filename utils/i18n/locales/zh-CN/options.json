@@ -31,6 +31,7 @@
   "options.header.personalization": "偏好设置",
   "options.header.tour": "新手引导",
   "options.header.tourTitle": "重新播放新手引导",
+  "options.header.cloudSync": "云文档同步",
   "options.header.siteRules": "站点规则",
   "options.header.domainMatch": "跨子域名匹配",
   "options.domainMatch.off": "仅精确匹配（默认）",

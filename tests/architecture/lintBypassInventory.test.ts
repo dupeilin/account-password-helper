@@ -57,6 +57,13 @@ const ALLOWED: BypassEntry[] = [
     reason: '表单对象由父级持有、按引用双向绑定',
   },
   { file: 'e2e/harness.ts', rule: 'no-empty-pattern', form: 'line', count: 1, reason: 'Playwright 参数占位' },
+  {
+    file: 'utils/cloudSync/sanitize.ts',
+    rule: 'no-control-regex',
+    form: 'line',
+    count: 1,
+    reason: '本模块职责就是匹配并移除控制字符（设计规格 §5.5），控制字符区间刻意声明',
+  },
 ];
 
 /** 源码里抓到的一处绕过（`eslint-disable` 与 `@ts-ignore` 系列统一成同一形状） */

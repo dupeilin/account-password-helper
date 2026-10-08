@@ -88,7 +88,9 @@ describe('表格截断浮层对指针透明', () => {
   }
 
   it('扫描到了带截断浮层的表格（抽取为空意味着守卫空跑）', () => {
-    expect(overflowTables.length).toBe(5);
+    // 5 张来自管理页/回收站/身份库等既有列表，另 2 张是云同步弹窗的
+    // 「冲突明细」与「同步预览」表（components/options/CloudSyncDialog.vue）。
+    expect(overflowTables.length).toBe(7);
   });
 
   it('每一张带 show-overflow-tooltip 的表格都绑定了共享 tooltip-options', () => {

@@ -247,6 +247,12 @@
       :backup-fn="backupToEmail"
     />
 
+    <!-- 云文档同步弹窗（腾讯智能表 / 飞书多维表格，仅手动触发） -->
+    <CloudSyncDialog
+      v-model="showCloudSyncDialog"
+      @synced="handleCloudSyncSynced"
+    />
+
     <!-- 自动保存设置弹窗 -->
     <AutoSaveSettingDialog v-model="showAutoSaveDialog" />
 
@@ -373,6 +379,7 @@ const ImportDialog = defineAsyncComponent(() => import('@/components/options/Imp
 const BackupImportDialog = defineAsyncComponent(() => import('@/components/options/BackupImportDialog.vue'));
 const ValiditySettingDialog = defineAsyncComponent(() => import('@/components/options/ValiditySettingDialog.vue'));
 const EmailBackupDialog = defineAsyncComponent(() => import('@/components/options/EmailBackupDialog.vue'));
+const CloudSyncDialog = defineAsyncComponent(() => import('@/components/options/CloudSyncDialog.vue'));
 const AutoSaveSettingDialog = defineAsyncComponent(() => import('@/components/options/AutoSaveSettingDialog.vue'));
 const IdleLockSetting = defineAsyncComponent(() => import('@/components/options/IdleLockSetting.vue'));
 const FavoriteLimitSetting = defineAsyncComponent(() => import('@/components/options/FavoriteLimitSetting.vue'));
@@ -536,6 +543,9 @@ const identityFormLoading = ref(false);
 /** 密码历史设置弹窗可见性 */
 const showPasswordHistoryDialog = ref(false);
 
+/** 云文档同步弹窗可见性（仅手动触发，无定时任务） */
+const showCloudSyncDialog = ref(false);
+
 /** 快捷键一览弹窗可见性 */
 const showShortcutDialog = ref(false);
 
@@ -613,6 +623,16 @@ const showBackupImportDialog = ref(false);
 /** 最近一次通过完整性自检的加密备份导出时间戳（epoch 毫秒），null 表示尚无已验证备份 */
 const lastVerifiedBackupAt = ref<number | null>(null);
 
+/**
+ * 云同步完成后刷新本地密码列表
+ *
+ * 明文双向同步/密文恢复都可能新增或更新本地条目，必须重新解密加载，
+ * 否则列表会停留在同步前的旧快照。
+ */
+const handleCloudSyncSynced = () => {
+  void loadPasswords();
+};
+
 /** 加密备份导出 */
 const handleEncryptedBackupExport = async () => {
   if (passwords.value.length === 0) {
@@ -689,6 +709,9 @@ const handleDataCommand = (command: string) => {
       break;
     case 'backup':
       openEmailBackupDialog();
+      break;
+    case 'cloudSync':
+      showCloudSyncDialog.value = true;
       break;
     case 'removeDuplicates':
       removeDuplicates();
